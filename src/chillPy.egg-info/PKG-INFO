@@ -1,3 +1,23 @@
+Metadata-Version: 2.4
+Name: chillPy
+Version: 0.0.1
+Summary: Pure Python placeholder rewrite of the R chillR package.
+Author: ChillPy contributors
+License: GPL-3.0-only
+Keywords: phenology,chilling,horticulture,climate,temperature
+Classifier: Development Status :: 2 - Pre-Alpha
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Topic :: Scientific/Engineering
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.26
+Requires-Dist: pandas>=2.2
+Provides-Extra: dev
+Requires-Dist: pytest>=8; extra == "dev"
+
 # chillPy
 
 `chillPy` is an early pure Python rewrite of the R package `chillR`, a toolkit

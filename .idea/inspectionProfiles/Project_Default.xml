@@ -1,0 +1,16 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="false" level="WARNING" enabled_by_default="false">
+      <option name="ignoredPackages">
+        <list>
+          <option value="aws-cdk-lib" />
+          <option value="constructs" />
+          <option value="termcolor" />
+          <option value="aws-cdk.aws-glue_alpha" />
+          <option value="aws-cdk.aws_scheduler_alpha" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>

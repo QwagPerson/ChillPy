@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Carsten Urbach, Eike Luedeling, Katja Schiffers" />
+
+<meta name="date" content="2025-12-10" />
+
+<title>PhenoFlex</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">PhenoFlex</h1>
+<h4 class="author">Carsten Urbach, Eike Luedeling, Katja Schiffers</h4>
+<h4 class="date">2025-12-10</h4>
+
+
+
+<div id="the-phenoflex-model" class="section level1">
+<h1>The <code>PhenoFlex</code> Model</h1>
+<p>The <code>PhenoFlex</code> Model constitutes a framework for modeling
+the spring phenology of deciduous trees, with a particular focus on
+fruit and nut trees. It uses the structure of the Dynamic Model for
+chill accumulation and the Growing Degree Hours model for heat
+accumulation. In order to relate spring phenology to chill and heat, and
+to account for varying theories about the relationship between these two
+agroclimatic phenomena, <code>PhenoFlex</code> includes a flexible
+transition function that defines responsiveness to heat (during
+ecodormancy) as a function of accumulated chill (during endodormancy).
+Unlike most previous applications of these models,
+<code>PhenoFlex</code> can flexibly fit the parameters of both models to
+observed spring phenology dates. The model can thus accommodate
+variation among the temperature responses of different species and
+cultivars.</p>
+<p>The <code>PhenoFlex</code> Model is implemented in the
+<code>chillR</code> package, which also contains functions to fit the
+model parameters to observed spring phenology data. This vignette
+demonstrates the use of the PhenoFlex Model to predict spring phenology
+dates, as well as the procedure for fitting model parameters to
+data.</p>
+<div id="data-preparation" class="section level2">
+<h2>Data preparation</h2>
+<p>We demonstrate the <code>PhenoFlex</code> functions using the example
+of cherry bloom data recorded at Campus Klein-Altendorf, the
+experimental station of the University of Bonn. This dataset, along with
+long-term records of daily minimum and maximum temperatures, is included
+in the <code>chillR</code> package (<code>KA_bloom</code> and
+<code>KA_weather</code>, respectively). Since the PhenoFlex model
+requires hourly temperatures, we use the <code>stack_hourly_temps</code>
+function from <code>chillR</code> to interpolate the daily data.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(chillR)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span></code></pre></div>
+<pre><code>## Warning: package &#39;ggplot2&#39; was built under R version 4.5.2</code></pre>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">data</span>(KA_weather)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">data</span>(KA_bloom)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>hourtemps <span class="ot">&lt;-</span> <span class="fu">stack_hourly_temps</span>(KA_weather, <span class="at">latitude=</span><span class="fl">50.4</span>)</span></code></pre></div>
+<p>In <code>PhenoFlex</code>, the chilling requirement is denoted <span class="math inline">\(y_c\)</span> and the heat requirement <span class="math inline">\(z_c\)</span>. We first illustrate how the model
+can be used to predict spring phenology events, based on user-specified
+<span class="math inline">\(y_c\)</span> and <span class="math inline">\(z_c\)</span> values and using the usual parameters
+for the Dynamic Model and the Growing Degree Hours model (the default
+values in <code>PhenoFlex</code>). To run the analysis for one year
+only, we select all data for the 2009 season. The 2009 season is the
+dormancy season that ends in 2009. The number of months to consider for
+the season is specified in the <code>genSeason</code> function by the
+<code>mrange</code> parameter. Since the default (August to June) is
+appropriate here, this is not specified below.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>yc <span class="ot">&lt;-</span> <span class="dv">40</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>zc <span class="ot">&lt;-</span> <span class="dv">190</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>iSeason <span class="ot">&lt;-</span> <span class="fu">genSeason</span>(hourtemps, <span class="at">years=</span><span class="fu">c</span>(<span class="dv">2009</span>))</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">PhenoFlex</span>(<span class="at">temp=</span>hourtemps<span class="sc">$</span>hourtemps<span class="sc">$</span>Temp[iSeason[[<span class="dv">1</span>]]],</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>                 <span class="at">times=</span><span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span> <span class="fu">length</span>(hourtemps<span class="sc">$</span>hourtemps<span class="sc">$</span>Temp[iSeason[[<span class="dv">1</span>]]])),</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>                 <span class="at">zc=</span>zc, <span class="at">stopatzc=</span><span class="cn">TRUE</span>, <span class="at">yc=</span>yc, <span class="at">basic_output=</span><span class="cn">FALSE</span>)</span></code></pre></div>
+<p>The PhenoFlex function generates a list that tracks the accumulation
+of x (precursor to the dormancy-breaking factor), y (the
+dormancy-breaking factor; or Chill Portion), z (heat accumulation) and
+xs (the ratio of the formation to the destruction rate of x) over time.
+It also returns a bloomindex element, which points to the row in the
+temps input table that corresponds to estimated budbreak (or whatever
+the phenological stage of interest is).</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>DBreakDay <span class="ot">&lt;-</span> res<span class="sc">$</span>bloomindex</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>seasontemps<span class="ot">&lt;-</span>hourtemps<span class="sc">$</span>hourtemps[iSeason[[<span class="dv">1</span>]],]</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>seasontemps[,<span class="st">&quot;x&quot;</span>]<span class="ot">&lt;-</span>res<span class="sc">$</span>x</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>seasontemps[,<span class="st">&quot;y&quot;</span>]<span class="ot">&lt;-</span>res<span class="sc">$</span>y</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>seasontemps[,<span class="st">&quot;z&quot;</span>]<span class="ot">&lt;-</span>res<span class="sc">$</span>z</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>seasontemps<span class="ot">&lt;-</span><span class="fu">add_date</span>(seasontemps)</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data=</span>seasontemps[<span class="dv">1</span><span class="sc">:</span>DBreakDay,],<span class="fu">aes</span>(<span class="at">x=</span>Date,<span class="at">y=</span>y)) <span class="sc">+</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">col=</span><span class="st">&quot;blue&quot;</span>,<span class="at">lwd=</span><span class="fl">1.5</span>) <span class="sc">+</span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size=</span><span class="dv">20</span>) <span class="sc">+</span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept=</span>yc,<span class="at">lty=</span><span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title=</span><span class="st">&quot;Chill (y) accumulation&quot;</span>)</span></code></pre></div>
+<div class="float">
+<img role="img" aria-label="Chill accumulation over time. The dashed line respresents y_c, the critical amount of chill units for ecodormancy to be broken." src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAkAAAAGACAMAAAByRC0tAAABelBMVEUAAAAAADoAAGYAAP8AOjoAOmYAOpAAZrYzMzM6AAA6OgA6Ojo6OmY6ZmY6ZpA6ZrY6kJA6kLY6kNtNTU1NTW5NTY5Nbm5Nbo5NbqtNjqtNjshmAABmADpmOgBmOjpmZjpmZpBmkJBmkLZmtrZmtttmtv9uTU1ubk1ubo5ujqtujshuq6tuq8huq+SOTU2Obk2Obm6Ojk2Ojo6Oq8iOq+SOyOSOyP+QOgCQZgCQZjqQZmaQtpCQtraQttuQ29uQ2/+rbk2rjm6rjo6rq26rq8iryOSr5OSr5P+2ZgC2Zjq2ZpC2kDq2kGa2kJC2tpC2tra225C229u22/+2///Ijk3Ijm7Iq47IyMjI5P/I/8jI/+TI///bkDrbkGbbtmbbtpDbtrbb27bb29vb2//b/7bb/9vb///kq27kq47kyI7kyKvk5Kvk5Mjk5P/k/+Tk///r6+v/tmb/yI7/25D/27b/29v/5Kv/5Mj/5OT//7b//8j//9v//+T///8T+pqpAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAXvUlEQVR4nO2d/YPUxn3GdSxvZ1No0WFSKKSlviV16yNtCq7bXgJt7BwNaWN8NDTZQnFaLjh1wx7mCOzpf+/MaEYzI412ZzSz0kh6nh9sSTc83y+aD/MqnZIMgjyUdJ0A1G8BIMhLAAjyEgCCvASAIC8BIMhLAAjyEgCCvASAIC8BIMhLAAjyEgCCvASAIC8BIMhLawNo8fT6ZpIk79/4tbjwSbLxI73IJ8mJL8v/K2mWnKlaf5JsryNlF5mzZfp2d0WBQWlNAC0eUHpyXXieX2oC0KtNUy2Yr7aqWj4W95OLSwsMTOsBiNw9Raef82vOANW1NTPu2Z1q+ZgnAMhbjJ9Tu7TzenadHJ7hF0sAydJ1ANWB8vZqXkvdaSVAY9FaANpLlLv4hJzQZqQBQK826wY7s67/eQMgrnUAROpdvYmzvBNrANBebU/VeRMEgLjWAdAs0SqeVPaJhwKgJ+8lycb5h+wHq8ZABMSL/P/Cr6geQxP0+sH7pLHbOLcrLizUYOVzhWfuT/I8/ZyVOUUt2Dzg5Ic1hWW2Wtg5H/ZtKwXIfJRcObdbzCVOfLl4oGfWY60BIDoC0nqer4pB9A/38vu7sc2vLAVoxmtNqb49cSTgUkvrg/bs1TU1WPncDND/8NH/xexbXro8fisDpIc1ACSMklMPxV/655tFsd5rDQCRW2xq3WklvCduNiuwAiDWIrCjmWh35CV5xCUrkhcmJbjyui+dmwH6O1Hkh8U8cttYWGRbClsFSIYt/tJS5j69V1oDQPPEOHRhd27jw+fZ4qe8jlcAJBuZog9TBhh7+t2n9XSBTfuu8fB7NFreAJzJqudGgEgz8QUpclU0GE836wrzbKthy9N4GvbG87xDPKPdhvvJEIZL7QJ0Iu/1Z8W9XAbQTDbxe0V/UVAz0zuAeSKWrHkDSKq2aHnoQfncDFDBqTwqTQB0gCphywCRy7LT5XHF33OWGJbZ+6b1AGS6L/TO6S3KCoCUNmZe9CQFmrWzHTpm16o2R618bgZoW1jwn3GzZYNoPWwZIAWSPfaT6m3ot1ptgcyVUAOQek5q50ymj5zJsQHT1//195uJqDltiFo+NwLEA1aOVgEkw5YB2pNh84yrVv3WegbRoQHifZjSg1UB4ru3YrRaGiNVzkMBVApbAkhd/Mr/JABaKdkBcC3YhrwXQHM+sZE3vHz3X8nd2zYBKoetAqQ2owDIRpV1IHJPL3gCxPowbe2n1ALls+WT5/70H//7aosAVcKiBQqg0kq0HD02B4j1YWoPVgZoJhbqRJ23MwaqhF0yBsqH8QBotUp7YfNkeSVYzMLoH6Fre8r91mdhijkPp02wz1TPFXsO/BKAqoUrDczcPIg2zcIA0CrN1CWyJ5vFsqEbQFqbQX76h9oGqt6iSHO6CqgvwOQVVz6n/ztT/InVAJUKlwESYW3WgQDQKrHV1pP0YdZ8I5HdJmeA9O2uWXJyUx3FlMY0e3lfkj8JyX7CV57pgm+xJKyeU8ovkDEJBXwlQJXCsocqhZ3Lv25lJdq8JtlvreeJxLfXEkWn8vmuK0D6dterTW1kVd4Lm6sBWRxlE6q0N1Y+//OrKwGqFJYr0aWw+bRs6V4YAFotttHDVX0m2g4gbdlHXcGlqixEi4AbN8QksNgG5wXL53M+A7/4djVAlcIi20rYfLP0ovzrVHfjAZCNXj+ofyvDEiC9D9P7rL1y4Yx1lidJb1EMl9mzPck5/Xkg5fz1/U36nE5mA1C5cJFtJeziU/qPRvnriOeB6m5DvxX1e2HqE4l6n9X5E4kQV9QAqc9EzxJ9SF1ugKBuFDVAylsZT7Wn1NAARaO4ASKg0CZoro59qbp/Lwziihsg/g7qK7H6UlwdwLOgA1HkAOXvxtNlpQuSn0UE78ZDXLEDBEUuAAR5CQBBXgJAkJcAEOQlAAR5CQBBXnIG6MXNNP3gdn789a00vfxZ6JSgPskVoP2U6WN6fKAcQyOVI0CH6RZpcV5Mt36SZUfTlLREL1J6DI1VjgAdiLbnY/0YGquaAnQnO76bNz1H0+/8LnxeUE/kCNDRlHZhX08v/YoARP5D9G4n/3+WnYVGIR+AsqNbdNx8+ScUnLzlESAVAL2EhixPgH4zpQBt3TYBxDFydHzpWH65WVC3iHML6uVk5gfQQXr5Me3CyBgIALmaAaACFjpwro6BeAAnx5grKebcegqQ2urUzcIAUJ0ZACIAKdDUrAMBoDozAER3Mi5/nmW/vUWhqVmJBkB1ZgCI9l35/hfrtcx7YQCozgwAER3/O92N/0E+6jHuxgOgOrP4AZroMpb2BGi1AFCdWfQATQAQAGriBYCkGQBq4PWygg4ACmQX1CxOgCyY0QSAXOyCmkUJkAoPAAJAzqLkvEQLVJgBICe5kMMFgFzsgprFB1DOTqsLiRYBHMvHW0kx5waACsVbSTHnFsCr6L0AkGIGgGwlxz4ASDEDQLaS83YApJgBIDupsy8ApJgBICtpU3cApJgBICsBoDozAGSjCQCqMwNAFiotPQMgxQwArVRl7wIAKWYAaJWqm18ASDEDQCtk2DyNDaCu3/6HaqXsXjQWWiAXu6BmnbdANY9uxNYCOZaPt5Jizg0AFYq3kmLOzdlryaNjAEgxA0BmLXvwEAApZgDIrGUPzQMgxQwAGTRZ0n9lAEgzA0BVrXpsHgApZgCoqiW9V+4FgKQZACpr9Ys7AEgxA0AlWbz1BYAUMwBUEgByMwNAmlZ2X8wLAEkzAKTKgp4MAGlmAEgVAHIVAFJk1X9lAEgzA0CF7OjJAJBmBoCELJufDABpZgCIy7b/ygCQZgaAqBzoyQCQZgaAMpvdC90LAEkzAJSt3j0tewEgaQaAXDswAKSZAaDyi8sWXq0C9PX303QLH1tpYtYGQK6tD/NqE6ADfO6psVkLADkOn7lXiwAdTekHm9/spHfwwTlnsxYBcvNqEaB9Sk6WHaZXMnzy0tVs3QA1an6yVgESH92lwkd3Xc3WDFAzerJWATqaXjm+xwfR1c9+n80V7FcBQE6a5B+9WHcYL4AO07/cEYNo9RPgAKhzFf3XugN5ApRukWn711My7qkCxDFycoy5m4g5t7JX0+6LebXXhR2mctwDgFzNAFAxYKbQVMdAPICTY8yVFHNuJa/GA2jm1RVAmIW5ma0LIC96slYBOr6brwMxaLAO5Gi2JoAmjpvvVa8WFxLJIOg2G0RjJdrdbI0A9aUFyrJH+f7XFXqMvTA3s/UA5ElP1vZu/IubafrB7fwYu/FOZmsByBsfPA+kmY0NIP/2BwBpZiMDyHf4k3sBIGk2IoCabr5XvQCQNBsPQMH4AUCq2bgA8lr+kV4ASJqNBqBwDRAAUs3GAlAgdpgAkGI2DoCC9V5MAEgxGwVA4XovJgCkmA0foICDHy4ApJgNHqAJACopwkqSdkHNQrgVTz4H8BICQIrZsAGSrQ8AKhRbJWl2Qc283ZS+CwAViqySdLugZl5upbEPACoUUSVV7YKa+biVx84AqFA8lWSwC2rm4SY2voqpFwAqFE0lmeyCmjV2M0zdAVChSCrJbBfUrKmbad0HABWKo5Jq7IKaASC7AI7l46ikGrugZg3djAvPQwZo3b8eYmTKF57jEVogF7ugZs3czPteQ26BHMvHUEm1dkHNGrnVbJwCoEIRVFK9XVCzxgCZzDyT0bwAkDQbEkDLHtwAQIUAUI2WPvkDgAoBIKMEOwBolQBQVRNNRrNgaQEgzWwQAFk8tQqACgEgXSuaHmEWJqfcCwBJs94DZIUPAFIEgDRN7N4ZBECFAJAqq+YnA0CKAJAiK3iYmW82qhcAkmb9Bsiu9WFm3ukoXgBImvUZINvui5kFSKjwAkDSrMcA2U2/hFmIjIQXAJJmvQfI1sw7HcULAEmz/gLk0PxkAEgRAGJyoScDQIoAEJVT85MBIEUAiGiCFkgGcCwPgJr8vvl+A7TPv/CEj604mdW5uePTc4AO+CfC8LknN7MatwbtT78Bop9upgDhg3OOZiY3p9VD1SxERsKrXYCOppdvMWbwyUtHM4NbQ3z6DNDx3Uu/ZJ/bxUd3Xc0AEBUZQB9zgMqf/T6bK8kl3qVOcF57TtmJKR+bcwuA3v7Jnz2s4+cgvcPbnnc78hPgAAgAqQBdTZKN80aGDunndusA4hjVsVejMXdhjXqv3MwzGc0rdBe2ePAeRc7AUD7eAUDNzEYDENHiZ9dMDPGVH6JLv6qOgXgAl2wyANTQzDMZzWs9g+jFU87QF/KaDhBmYW5mIwMoowxdZwzdeK5d5uhgHcjRbHwAZc8+3WQj8I0P1ascIKxEW2uyRN1mxrzWBNDTT/Pm56sHhKJt5Qei88JemIWWsTNkgHjnxQfRs+S00osJgLAbv0qr2GnMT+QA5fQkcvj89uqJL60DuGSTDRoghZPADVDcANGFxOTcrnYFADWQzknQ3CIH6NSuPu/69t++MJSrCeCSTTZggMptzHgA8hMAylXpoQCQZQDH8gCoiQBQoUECZBojAyDLAI7lhwiQcYYFgCwDOJYfKEDVNR4AZBnAsfwAATKv8QAgywCO5YcHUM0CIQCyDOBYHgA1EQAqNDiA6rYoAJBlAMfyQwJo6Q4XALIM4Fh+QAAt3yIFQJYBHMsPDaDaxwwBkGUAx/LDAWjFMxoAyDKAY/lhAGTxeA8AsgzgWH4QANk8HwaALAM4lu8/QAU8ACiExgaQ9ROqAMgygGP5ngNk/3AzALIM8HJEkk1P15m0JrRALnYrfm7d+jAztEB2ARzL9x8gWzMAZBfAsXyPAXJpfwCQdQDH8v0FyIWeDABZB3AsD4CaCAAV6itAbv1XBoCsAziW7ydArvRkAMg6gGP5XgLk3PxkAMg6gGP5HgJkv/qsmQEguwCO5XsHkHhozPnzFgDILoBj+X4BZLVtWmMGgOwCOJbvFUDN8QFA1gEcy/cSoEZmAMgugGP5PgHkgQ8Asg7gWL5vADU3A0B2ARzL9wcgn+YnA0DWARzL9wYgr/4rA0DWARzL9wMgn+mXMANAdgEcy/cCoAD8ACDbAI7l+wSQnxkAsgvgWD56gDwWn3UzAGQXwLF87ACFoScDQNYBHMtHDtBksuQXbriZASCi3z+apukHt/OTEXytJ1D3xcwAUJa92cm/EXaFngz/e2HB4KECQET76UffZNmLaXpnDF8sDNf6UAEg+anvA9oEDf+bqSHxAUCqjqZXsqF/tTng6CcXAJKirU71u/Fnc3X99n8YcXq6TiM+hQDoaEqYEd2ZAGl4AL0EQAYFAOiIjaGrAHGMHN2i7MKC918ZurBCL9jsa9AACXhizI2bhfRqFaDjR+nWHXZQGQPxAI6GsVWSuvUVW26KWUivNgE6vptefsyPBjkLmwCg5fIDiPDzkcBlmOtAYu8rt/NOSBEAynRahrgSXXp0I6rcdLOQXm2uRKdctNsa3l5YeeYVU24ls5Be7QF0mKoADW03vjp1jye3illILzwPJM083AxrP9HkVjUL6QWApFlzN3XwXNj55qOZASC7AI7l46gk89JzHLkZzUJ6ASBp1tCtZuMiitzMZiG9AJA0a+JW/9pF97nVmoX0AkDSrIFbPT/d51ZvFtILAEmzZgDVfemr89zqzUJ6ASBp5uy29MENAFQVANK0/KkfAFQVANIEgACQZubktvK5QwBUFQAqtPqpVQBUFQAqtGT6Jex889HMAJBdAMfyHVXSktUfxS5AStIMANkFcCzfTSXZvXQBgKoCQEyruy9m55uPZgaA7AI4lu+kkiy6L2bnnZBqBoDsAjiWb7+S7OBhdr75aGYAyC6AY/nWK8my9WF23gmpZgDILoBjeQDUyCykFwCSZkvdJors7IIkJcwAkF2Arn99RK0kPV1n0meNuAXiTY9t85OhBTJpvAC59l8ZADJpXABNSnK1C5ZYBoCsAziWX2cllfkBQEYvACTNagFq9qXucJkBIOsAjuXXUkmVpqcJPgDIpFEA5AONZhcip8IMANkFcCy/RoBcZuxmuxA5FWYAyC6AY/ngleTZbWl2gdLKzQCQXQDH8qErKQQ4hV0QF2EGgOwCOJZfA0DeXVdhF8RFmAEguwCO5YNWUqCuSwgAVTVogELCQwWAqho6QMG6LyoAVNVgAQo181IFgKoaKkDB4aECQFUNECBtv8vbTRUAqmp4AAVcOCwLAFU1XICYWdAqB0AGDQugctsDgJp4jRegSr8FgJp4jRUgw8gZADXx6gygTj+2Yhw5A6AmXl0B1OHnnupmXQCoiVdHAHX4wbnaaTsAauLVEUDdffJyUvuMPABq4tUNQG4f3Z2sQYYwAKiJV1cAlT/7fTaX8Y3q0PC0/EI4VCgYQO928pZHgNQaQC8BUJdaI0AcI2PpgABR1SWFLqyJVzddmBtA9Yq3kmLObQAAVcdAPICjT7yVFHNugwDIZRZWr3grKebcBgBQh+tAS8wAUAOv8a1E15sBoAZeI9wLqzUDQA28xrkbbzYDQA28xvo8kMkMADXwAkDSDAA18IoMIGjgAkCQl9YMUKc669qBtqhoc/NKDAC1pmhzA0BS0VZSFnFuAEgq2krKIs4NAElFW0lZxLkBIKg7ASDISwAI8hIAgrwEgCAvASDISwAI8hIAgrw0AIDe3Jum6dZH31R/8OMOsqlov/TMeCQ6vpveCeHTf4D4k9np1t+WfnA0vdJJQiVFCtDRNNVfx2qo3gNE+KGNz+8fVZ7uB0DLdLB1M0hifQfoaCpugzwqfgSAavVu5zsvyv/iGqnvACmvNeaHx4+meW92YHjlqAvlAL25d5Ok873H7MLn9wxvs7Srw/Rj/k768d1Lv3zEUzu49B+30kuPXYx6DpB4v5qKvWNNxoYcnKgAIiOOfKBGjvflYbdZ7bNhNAHon0U+B5f+OnUcGvUcIPErQqjYb3s4SC8/5r1ZTF3YfvpXJM83O5To/XTrMwp6l9mx+3bIUqD/5G5nx/v05MAd64EBxFsk1pvFBBDXQQ4QbRcPOwWIJfJuh6ZGAKL5sA6t/HsOLDQwgNTzuAA6/t9f/NP3WZ+aX+g0O97Rs3TEKICmdeC+NtRzgNTfbkXHQLECdHxP1lgEAIkhWcpGjTlAFJ7xAVSehcUE0NEtFp+Pgbb+5se/+OYgEoD4XWPsjLsFKq8D8bvBaqdzgNhv3mIZca7z4Ub3AOWDn4yCdKU0BhodQOWVaDYLe8P2eY6mfxxirb6x3u3kqwmEHVJjn5FJ2K1IurBDMVU/mtJ5h5wVjhGg7DdiiYXthfHhIb1BtKPvdB2I79LROuFrPymtpe4B2hec0B1V0kTSNc6UDiZHCRBpfNTdeLYS/RH7B0bQ6rYTe3FTrDjTrNIPfvBb2qt1DpDya1FJ+/h/d7c+J833X/wuGytAkJfUxfwGAkBjFwCCvASAIC8BIKhLASDISwAI8hIAgrwEgCAvASDISwAI8hIAstNewrVxbvd5TZnFv3zZak5RCADZqQCI6NSPjEWebJ4AQFCN9pIz+cHrJ5vJhpGgWQKAoDoVAGXZ26tmUgAQVC8FoOzVZnLRUAQAQfVSASInp9lA+vWD9+mw+vxDcjzPx0fb9Pqz6+To3G4XebYuAGQnDaB5Pgqab4ph9bYG0H1+9XTddG1IAkB20gAifdg2GwudJm3PgoyqWd8lurBZkvzR82zxn5vqHxmsAJCdNIAIOheVMc8sb5D4OaHrQ3Z5XjNbG5YAkJ0MABWaawDNiq5rbwxNEACyUx1Ai2f/+t1EBWjxSfGz2RhGQQDITkaAnl4X+xsSIPIzqRHM6wGQnQyD6Hx7Y+MPdp8AIGiVDNN4Mts6/4U8lQCZVhkHKwBkp+pCIhns8Euz0hhoBENnKQBkp9JWxrbS1BBk1FnY3hg6LikAZCd9M5XOroqmZp6U14Hy6+NoiwCQnQqAvnogHufYy1ec74sdjLm8TnfHnl3DQiJUSHug7CG7JOZbp/4h351/RbfGyMFC7IVtbHebcysCQHYqADp5fldcW9wnyJy88Vz0VU82E2V96OSFX3eUa6sCQJCXABDkJQAEeQkAQV4CQJCXABDkJQAEeQkAQV4CQJCXABDkJQAEeQkAQV4CQJCXABDkJQAEeQkAQV4CQJCXABDkpf8HeQxhKFQNMusAAAAASUVORK5CYII=" alt="Chill accumulation over time. The dashed line respresents y_c, the critical amount of chill units for ecodormancy to be broken." />
+<div class="figcaption">Chill accumulation over time. The dashed line
+respresents <span class="math inline">\(y_c\)</span>, the critical
+amount of chill units for ecodormancy to be broken.</div>
+</div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data=</span>seasontemps[<span class="dv">1</span><span class="sc">:</span>DBreakDay,],<span class="fu">aes</span>(<span class="at">x=</span>Date,<span class="at">y=</span>z)) <span class="sc">+</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">col=</span><span class="st">&quot;red&quot;</span>,<span class="at">lwd=</span><span class="fl">1.5</span>) <span class="sc">+</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size=</span><span class="dv">20</span>) <span class="sc">+</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept=</span>zc,<span class="at">lty=</span><span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title=</span><span class="st">&quot;Heat (z) accumulation&quot;</span>)</span></code></pre></div>
+<div class="float">
+<img role="img" aria-label="Heat accumulation over time. The dashed line respresents the z_c, the critical amount of heat units for ecodormancy to be broken." src="data:image/png;base64,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" alt="Heat accumulation over time. The dashed line respresents the z_c, the critical amount of heat units for ecodormancy to be broken." />
+<div class="figcaption">Heat accumulation over time. The dashed line
+respresents the <span class="math inline">\(z_c\)</span>, the critical
+amount of heat units for ecodormancy to be broken.</div>
+</div>
+</div>
+</div>
+<div id="the-phenologyfitter" class="section level1">
+<h1>The phenologyFitter</h1>
+<p>The <code>PhenoFlex</code> model can be fitted to phenological data,
+provided that sufficient observations are available for the cultivar of
+interest. For this kind of model, parameters are usually determined
+using an empirical solver. Solvers identify the best combination of
+model parameters by trying out different values and gradually adjusting
+these parameters, until the objective function - a measure of how far
+predictions are from the observed data - does not decrease further. In
+this framework, we fit the model using a generalized simulated annealing
+algorithm. In contrast to other algorithms, simulated annealing can deal
+with discrete data (we calculate the residual sum of squares between
+observed and predicted bloom days as objective function). Since
+simulated annealing is a stochastic solver, there is a risk of not
+finding the overall best parameter combination (global minimum of
+residual sum of squares). The generalisation of the basic solver reduces
+this risk. Still, the search should be repeated several times with
+different initial parameter values and random seeds. This iterative
+procedure requires lots of model runs, which can take substantial time
+and/or computing power. Here, we only demonstrate the functionality
+using a maximum of 10 iterations of the simulated annealing procedure.
+In order to achieve reliable parameters, we recommend at least 1000
+iterations. We also recommend using many observations of a cultivar’s
+spring phenology (many more than in this example), and ideally to
+include winter seasons spanning a wide range of temperature
+conditions.</p>
+<p>For fitting the <code>PhenoFlex</code> model to phenological data, we
+have to generate a list of seasons as follows. We are only using 6
+seasons in this example, but a real-life application should be based on
+at least 15 to 20 seasons or even more, comprising variable temperature
+profiles across years.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>SeasonList <span class="ot">&lt;-</span> <span class="fu">genSeasonList</span>(hourtemps<span class="sc">$</span>hourtemps, <span class="at">years=</span><span class="fu">c</span>(<span class="dv">2003</span><span class="sc">:</span><span class="dv">2008</span>))</span></code></pre></div>
+<p>Parameters are then fitted using the generalized simulated annealing
+algorithm, which is called by the <code>phenologyFitter</code> function
+and requires several inputs:</p>
+<ul>
+<li>an integer vector of observed dates of bloom (or other phenological
+stages)</li>
+<li>a function describing the model to be fitted, which only takes as
+input a data.frame of dates and observed temperatures. Since the
+<code>PhenoFlex</code> model has more than one parameter, we have to
+wrap it into another function (<code>PhenoFlex_GDHwrapper</code>), which
+requires a temperature dataset <code>x</code> and a vector containing
+all the parameters of the <code>PhenoFlex</code> model. Within the
+wrapper function, this parameter vector is unpacked, with each value
+assigned to the respective parameter.</li>
+<li>a vector containing initial estimates for all parameters</li>
+<li>a vector containing lower bounds for all parameters</li>
+<li>a vector containing upper bounds for all parameters</li>
+</ul>
+<p>The order, in which the <code>PhenoFlex</code> parameters have to be
+provided, is given in the description of the
+<code>PhenoFlex_GDHwrapper</code> function as follows:</p>
+<ol style="list-style-type: decimal">
+<li><strong>yc</strong> - chilling requirement; critical value of y,
+which defines the end of chill accumulation - default value: 40</li>
+<li><strong>zc</strong> - heat requirement; critical value of z, which
+defines the end of heat accumulation - default value: 190</li>
+<li><strong>s1</strong> - slope parameter that determines the transition
+from the chill accumulation to the heat accumulation period in
+<code>PhenoFlex</code> - default value: 0.5</li>
+<li><strong>Tu</strong> - optimal temperature of the Growing Degree
+Hours (GDH) model - default value: 25</li>
+<li><strong>E0</strong> - time-independent activation energy of forming
+the PDBF - default value: 3372.8 (as in the widely used version of the
+Dynamic Model)</li>
+<li><strong>E1</strong> - time-independent activation energy of
+destroying the PDBF - default value: 9900.3 (as in the widely used
+version of the Dynamic Model)</li>
+<li><strong>A0</strong> - amplitude of the (hypothetical) process
+involved in forming the precursor to the dormancy-breaking factor in the
+Dynamic Model - default value: 6319.5 (as in the widely used version of
+the Dynamic Model)</li>
+<li><strong>A1</strong> - amplitude of the (hypothetical) process
+involved in destroying the precursor to the dormancy-breaking factor
+(PDBF) in the Dynamic Model - default value: 5.939917e+13 (as in the
+widely used version of the Dynamic Model)</li>
+<li><strong>Tf</strong> - transition temperature parameter of the
+sigmoidal function in the Dynamic Model, also involved in converting
+PDBF to Chill Portions - default value: 4</li>
+<li><strong>Tc</strong> - upper threshold in the GDH model - default
+value: 36<br />
+</li>
+<li><strong>Tb</strong> - base temperature of the GDH model - default
+value: 4</li>
+<li><strong>slope</strong> - slope parameter of the sigmoidal function
+in the Dynamic Model, which determines what fraction of the PDBF is
+converted to a Chill Portion - default value: 1.6</li>
+</ol>
+<p>Note that the <code>PhenoFlex_GDHwrapper</code> can only fit the
+version of the <code>PhenoFlex</code> model that uses a heat model based
+on the GDH concept. For use of the Gaussian heat model that can also be
+considered by <code>PhenoFlex</code>, use the
+<code>PhenoFlex_GAUSSwrapper</code> function.</p>
+<p>For this example, we initiate the procedure with the default values,
+and we set upper and lower bounds as follows:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>par <span class="ot">&lt;-</span>   <span class="fu">c</span>(<span class="dv">40</span>, <span class="dv">190</span>, <span class="fl">0.5</span>, <span class="dv">25</span>, <span class="fl">3372.8</span>,  <span class="fl">9900.3</span>, <span class="fl">6319.5</span>, <span class="fl">5.939917e13</span>,  <span class="dv">4</span>, <span class="dv">36</span>,  <span class="dv">4</span>,  <span class="fl">1.60</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>upper <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">41</span>, <span class="dv">200</span>, <span class="fl">1.0</span>, <span class="dv">30</span>, <span class="fl">4000.0</span>, <span class="fl">10000.0</span>, <span class="fl">7000.0</span>,       <span class="dv">6</span>.e13, <span class="dv">10</span>, <span class="dv">40</span>, <span class="dv">10</span>, <span class="fl">50.00</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>lower <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">38</span>, <span class="dv">180</span>, <span class="fl">0.1</span>, <span class="dv">0</span> , <span class="fl">3000.0</span>,  <span class="fl">9000.0</span>, <span class="fl">6000.0</span>,       <span class="dv">5</span>.e13,  <span class="dv">0</span>,  <span class="dv">0</span>,  <span class="dv">0</span>,  <span class="fl">0.05</span>)</span></code></pre></div>
+<p>Now, we can run the fitter:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>Fit_res <span class="ot">&lt;-</span> <span class="fu">phenologyFitter</span>(<span class="at">par.guess=</span>par, </span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>                           <span class="at">modelfn =</span> PhenoFlex_GDHwrapper,</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>                           <span class="at">bloomJDays=</span>KA_bloom<span class="sc">$</span>pheno[<span class="fu">which</span>(KA_bloom<span class="sc">$</span>Year <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">2003</span><span class="sc">:</span><span class="dv">2008</span>))],</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>                           <span class="at">SeasonList=</span>SeasonList, <span class="at">lower=</span>lower, <span class="at">upper=</span>upper,</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>                           <span class="at">control=</span><span class="fu">list</span>(<span class="at">smooth=</span><span class="cn">FALSE</span>, <span class="at">verbose=</span><span class="cn">FALSE</span>, <span class="at">maxit=</span><span class="dv">10</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>                                        <span class="at">nb.stop.improvement=</span><span class="dv">5</span>))</span></code></pre></div>
+<pre><code>## Loading required namespace: parallel</code></pre>
+<p>Note that the list <code>control</code> regulates the behavior of the
+<code>GenSA</code> algorithm, the solving engine we are using here. Note
+further that <code>smooth=FALSE</code> must be set for the
+<code>PhenoFlex</code> model, since the objective function, the residual
+sum of squares between predicted and observed bloom days is calculated
+based on discrete data (days) and is thus not smooth.
+<code>verbose</code> controls whether messages from the algorithm are
+shown. <code>maxit</code> defines the maximum number of iterations of
+the algorithm and should have a value of at least 1000.
+<code>nb.stop.improvement</code> is the number of search steps of the
+algorithm, after which the solver is stopped when there is no further
+improvement of the fit.</p>
+<p>In the example above, the values are chosen in a way that allows the
+fitter to finish quickly. <em>Thus, the result may not be particularly
+meaningful. More reasonable parameters are, for instance, the default
+values of <code>phenologyFitter</code></em>:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>control<span class="ot">=</span><span class="fu">list</span>(<span class="at">smooth=</span><span class="cn">FALSE</span>, <span class="at">verbose=</span><span class="cn">TRUE</span>, <span class="at">maxit=</span><span class="dv">1000</span>,</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>             <span class="at">nb.stop.improvement=</span><span class="dv">250</span>)</span></code></pre></div>
+<p><code>phenologyFitter</code> can also be used with other models. For
+instance, in order to fit the <code>StepChill</code> model, we could
+add</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>modelfn<span class="ot">=</span>StepChill_Wrapper</span></code></pre></div>
+<p>to the argument list of <code>phenologyFitter</code> and adapt the
+parameter vectors <code>par</code>, <code>upper</code> and
+<code>lower</code> accordingly.</p>
+<p>The result of a fitting procedure can be summarized as follows</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">summary</span>(Fit_res)</span></code></pre></div>
+<pre><code>
+Phenology Fitter
+
+Final RSS:  33.94618 
+RMSE     :  2.378591 
+R^2      :  1.977668 
+
+data versus predicted:
+  data predicted      delta
+1  107  105.4167  1.5833333
+2  110  106.3333  3.6666667
+3  105  103.8333  1.1666667
+4  116  119.2500 -3.2500000
+5  105  105.1667 -0.1666667
+6  115  117.4583 -2.4583333</code></pre>
+<p>with <code>data</code> being the days where bloom or any other
+phenological event was observed, <code>predicted</code> the day that was
+predicted by the model and <code>delta</code> the difference between
+<code>data</code> and <code>predicted</code>, i.e. the residual error.
+These results can also be visualized using the <code>plot</code>
+function</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">plot</span>(Fit_res)</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
+</div>
+<div id="computing-errors" class="section level1">
+<h1>Computing Errors</h1>
+<p>Model prediction are usually uncertain, and the possible errors this
+may produce should be expressed. To estimate these errors, we use a
+bootstrapping technique, which involves the following steps:</p>
+<ol style="list-style-type: decimal">
+<li>we first predict bloom dates using our fitted PhenoFlex framework
+(see above)</li>
+<li>for all years in our calibration dataset, we calculate the residuals
+of the predictions (observed minus predicted bloom dates)</li>
+<li>we then take the whole population of these residuals and draw as
+many random samples from it as we have years in our calibration dataset.
+In drawing these samples, it is important that they are drawn <em>with
+replacement</em>, i.e. all values that were calculated in step 2 are
+available each time a sample is drawn.</li>
+<li>we add the residuals that we obtained in step 3 to the phenological
+dates in our <strong>calibration dataset</strong></li>
+<li>we use the resulting dates to again fit the parameters of the
+<code>PhenoFlex</code> framework, make predictions <strong>for the
+validation dataset</strong> and record the results for each year</li>
+<li>we repeat steps 3-5 many times, recording prediction results for
+each repetition</li>
+<li>based on the population of predicted bloom dates for each year, we
+calculate standard deviations of the resulting distribution, as well as
+the <span class="math inline">\(16^{th}\)</span> and <span class="math inline">\(84^{th}\)</span> percentiles, which provide
+estimates of the standard error. More details on this procedure and the
+whole <code>PhenoFlex</code> concept will eventually be provided in a
+peer-reviewed paper</li>
+</ol>
+<p>In short, the residuals are bootstrapped and then the fit is
+repeated. This procedure is performed <code>boot.R</code> times.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>Fit_res.boot <span class="ot">&lt;-</span> <span class="fu">bootstrap.phenologyFit</span>(Fit_res, <span class="at">boot.R=</span><span class="dv">10</span>,</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>                                       <span class="at">control=</span><span class="fu">list</span>(<span class="at">smooth=</span><span class="cn">FALSE</span>, <span class="at">verbose=</span><span class="cn">TRUE</span>, <span class="at">maxit=</span><span class="dv">10</span>,</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>                                                    <span class="at">nb.stop.improvement=</span><span class="dv">5</span>),</span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>                                       <span class="at">lower=</span>lower, <span class="at">upper=</span>upper, <span class="at">seed=</span><span class="dv">1726354</span>)</span></code></pre></div>
+<pre><code>## Emini is: 11.875
+## xmini are:
+## 38.55137491 192.8703614 0.1178039946 26.26897196 3372.8 9900.3 6583.528572 5.939903374e+13 7.556121483 26.76778409 2.3951803 1.8951803 
+## Totally it used 2.153 secs
+## No. of function call is: 338
+## Algorithm reached max number of iterations.
+## ========Emini is: 29.75520833
+## xmini are:
+## 38.23353909 181.1035987 0.1155335754 27.59297429 3372.8 9900.3 6278.621388 5.9399184e+13 7.096261393 31.92723795 2.3951803 1.6 
+## Totally it used 1.483 secs
+## No. of function call is: 258
+## Algorithm reached max number of iterations.
+## ========Emini is: 22.34375
+## xmini are:
+## 40.58797545 195.1993158 0.1178039946 26.26897196 3372.8 9900.3 6611.817017 5.939928537e+13 7.556121483 27.52934186 2.3951803 1.8951803 
+## Totally it used 2.515 secs
+## No. of function call is: 378
+## Algorithm reached max number of iterations.
+## ========Emini is: 11.140625
+## xmini are:
+## 39.11676954 195.5517993 0.3217588819 27.59297429 3372.8 9900.3 6278.621388 5.9399184e+13 7.096261393 31.92723795 2.3951803 1.6 
+## Totally it used 1.462 secs
+## No. of function call is: 258
+## Algorithm reached max number of iterations.
+## ========Emini is: 20.125
+## xmini are:
+## 39.69295208 198.8907511 0.2656620428 27.59297429 3372.8 9900.3 6008.110066 5.939925353e+13 5.414897204 31.92723795 2.843927689 17.28876005 
+## Totally it used 2.665 secs
+## No. of function call is: 422
+## Algorithm reached max number of iterations.
+## ========It: 2, obj value (lsEnd): 33.62673611 indTrace: 2
+## No improvement in 5 iterations
+## Emini is: 31.73784722
+## xmini are:
+## 40.34037319 197.8501117 0.1178039946 27.59297429 3359.949112 9900.3 6112.601039 5.939930169e+13 4.580361858 32.83150993 2.3951803 3.624734886 
+## Totally it used 1.696 secs
+## No. of function call is: 269
+## ========Emini is: 36.16493056
+## xmini are:
+## 38.23353909 195.5517993 0.3217588819 27.59297429 3372.8 9900.3 6278.621388 5.9399184e+13 7.096261393 31.92723795 2.3951803 1.6 
+## Totally it used 1.514 secs
+## No. of function call is: 258
+## Algorithm reached max number of iterations.
+## ========It: 1, obj value (lsEnd): 19.22743056 indTrace: 1
+## No improvement in 5 iterations
+## Emini is: 19.22743056
+## xmini are:
+## 38.23353909 181.1035987 0.1155335754 27.59297429 3372.8 9900.3 6451.495766 5.9399184e+13 7.096261393 31.92723795 2.3951803 1.6 
+## Totally it used 0.956 secs
+## No. of function call is: 163
+## ========Emini is: 19.625
+## xmini are:
+## 40.66456971 195.0371152 0.1178039946 26.26897196 3372.8 9900.3 6611.817017 5.939917907e+13 7.556121483 26.76778409 2.3951803 1.8951803 
+## Totally it used 1.782 secs
+## No. of function call is: 298
+## Algorithm reached max number of iterations.
+## ========Emini is: 19.47222222
+## xmini are:
+## 39.11676954 195.5517993 0.3217588819 27.59297429 3372.8 9900.3 6278.621388 5.9399184e+13 7.096261393 31.92723795 2.3951803 1.6 
+## Totally it used 1.363 secs
+## No. of function call is: 258
+## Algorithm reached max number of iterations.
+## ========</code></pre>
+<p>Like for the result of <code>phenologyFitter</code> there is also a
+<code>summary</code> and a <code>plot</code> function for
+<code>bootstrap.phenologyFit</code>.</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">summary</span>(Fit_res.boot)</span></code></pre></div>
+<pre><code>            par          Err          q16          q84
+1  3.911677e+01 9.883823e-01 3.823354e+01 4.047903e+01
+2  1.955518e+02 6.408723e+00 1.862810e+02 1.968389e+02
+3  3.217589e-01 9.979709e-02 1.165326e-01 3.217589e-01
+4  2.759297e+01 6.395539e-01 2.626897e+01 2.759297e+01
+5  3.372800e+03 4.063808e+00 3.372800e+03 3.372800e+03
+6  9.900300e+03 0.000000e+00 9.900300e+03 9.900300e+03
+7  6.278621e+03 2.096442e+02 6.185650e+03 6.599370e+03
+8  5.939918e+13 7.437446e+07 5.939918e+13 5.939927e+13
+9  7.096261e+00 9.998453e-01 6.154697e+00 7.556121e+00
+10 3.192724e+01 2.456749e+00 2.710287e+01 3.192724e+01
+11 2.395180e+00 1.419064e-01 2.395180e+00 2.395180e+00
+12 1.600000e+00 4.897910e+00 1.600000e+00 2.863731e+00</code></pre>
+<p>with <code>par</code> being the estimated parameter values,
+<code>Err</code> the standard deviation of the bootstrap distribution
+and <code>q16</code> and <code>q84</code> the 16. and 84. percentiles,
+respectively.</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">plot</span>(Fit_res.boot)</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
+<p>This plot now shows observed bloom dates, as well as bloom dates
+predicted with the <code>PhenoFlex</code> model, including an estimate
+of prediction uncertainty (shown as error bars).</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
