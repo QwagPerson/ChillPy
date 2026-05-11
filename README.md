@@ -165,6 +165,50 @@ fit = phenologyFitter(
 residuals = fit["residuals"]
 ```
 
+## Examples / Notebooks
+
+The `examples/` directory contains reproducible getting-started notebooks that
+double as smoke tests for complete workflows. They use deterministic synthetic
+data in `examples/data/`; these CSV files are not field observations.
+
+Recommended order:
+
+1. [`01_getting_started_weather_and_chill.ipynb`](examples/01_getting_started_weather_and_chill.ipynb)
+   covers weather checking, gap repair, hourly temperature generation, chill
+   metrics, heat accumulation, and daily chill plots.
+2. [`02_temperature_interpolation_and_gap_filling.ipynb`](examples/02_temperature_interpolation_and_gap_filling.ipynb)
+   demonstrates one-dimensional and hourly temperature gap filling with before
+   and after plots.
+3. [`03_phenology_and_bloom_prediction.ipynb`](examples/03_phenology_and_bloom_prediction.ipynb)
+   runs a simple bloom prediction workflow and compares predicted and synthetic
+   observed bloom dates.
+4. [`04_pls_analysis.ipynb`](examples/04_pls_analysis.ipynb)
+   runs a compact PLS phenology analysis, extracts interpretation tables, and
+   renders the matplotlib PLS summary plot.
+5. [`05_train_phenoflex_cherry_bloom_prediction.ipynb`](examples/05_train_phenoflex_cherry_bloom_prediction.ipynb)
+   fits and compares PhenoFlex-style cherry bloom prediction models using
+   synthetic hourly weather and bloom observations.
+
+Run them locally after installing the development dependencies:
+
+```bash
+pip install -e ".[dev]"
+jupyter notebook examples/
+```
+
+The notebooks and example data can be regenerated with:
+
+```bash
+python scripts/create_example_notebooks.py
+```
+
+Automated notebook execution is included in the pytest suite and can also be
+run directly:
+
+```bash
+pytest tests/test_notebooks.py
+```
+
 ## Installation
 
 ```bash

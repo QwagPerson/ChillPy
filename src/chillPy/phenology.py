@@ -491,7 +491,7 @@ def _unwrap_cross_year_seasons(
     for idx, season in enumerate(season_list):
         fit_season = season.copy()
         stored = season.copy()
-        jdays = pd.to_numeric(fit_season["JDay"], errors="coerce").to_numpy(dtype=float)
+        jdays = pd.to_numeric(fit_season["JDay"], errors="coerce").to_numpy(dtype=float).copy()
         min_jday = float(jdays[0])
         max_jday = float(jdays[-1])
         if jdays.size > 1 and max_jday > min_jday:

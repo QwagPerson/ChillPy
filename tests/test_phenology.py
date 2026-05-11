@@ -637,6 +637,22 @@ def test_phenology_fitter_preserves_r_style_cross_year_unwrapping():
     np.testing.assert_allclose(fit["pbloomJDays"], [351.0])
 
 
+def test_phenology_fitter_accepts_read_only_jday_arrays():
+    jdays = np.array([350.0, 351.0, 1.0, 2.0, 3.0])
+    jdays.setflags(write=False)
+    season = pd.DataFrame({"Temp": [5.0] * len(jdays), "JDay": pd.Series(jdays)})
+
+    fit = phenologyFitter(
+        par_guess=[0, 0, 2.0, 1],
+        bloom_jdays=[2.0],
+        season_list=[season],
+        modelfn=UniForce_Wrapper,
+    )
+
+    np.testing.assert_allclose(fit["pbloomJDays"], [2.0])
+    assert fit["rmse"] == pytest.approx(0.0)
+
+
 def test_phenology_fitter_validates_inputs():
     season = _cross_year_season()
 
