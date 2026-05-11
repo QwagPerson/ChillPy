@@ -1,4 +1,4 @@
-"""Phenology, PLS, and model-fitting placeholders mapped from chillR."""
+"""Phenology, PLS, and model-fitting helpers mapped from chillR."""
 
 from __future__ import annotations
 

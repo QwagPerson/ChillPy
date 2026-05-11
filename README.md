@@ -118,6 +118,16 @@ plot_data = prepare_pls_plot_data(pls, vip_threshold=0.8)
 important_windows = plot_data["important_windows"]
 ```
 
+PLS and daily chill summaries can also be rendered with matplotlib. Library
+functions return figure and axes objects and never call `show()`:
+
+```python
+from chillPy import make_chill_plot, plot_pls
+
+chill_plot = make_chill_plot({"daily_chill": daily_metrics}, metrics=["Chill_Portions"])
+pls_plot = plot_pls(pls, vip_threshold=0.8)
+```
+
 Bloom dates can be predicted from sequential chill and heat requirements:
 
 ```python
@@ -167,8 +177,8 @@ pip install -e ".[dev]"
 pytest
 ```
 
-The tests cover implemented numerical behavior and keep remaining placeholders
-importable and explicit.
+The tests cover implemented numerical and plotting behavior and keep remaining
+external-service placeholders importable and explicit.
 
 ## API Mapping
 

@@ -1,19 +1,150 @@
 import pytest
 import numpy as np
 import pandas as pd
+import matplotlib
 
-from chillPy import PLS_pheno, color_bar_maker, make_chill_plot, plot_pls, prepare_pls_plot_data
+matplotlib.use("Agg")
+from matplotlib.figure import Figure
+from matplotlib.axes import Axes
+
+from chillPy import (
+    PLS_pheno,
+    color_bar_maker,
+    make_chill_plot,
+    plot_climate_scenarios,
+    plot_phenology_trends,
+    plot_pls,
+    plot_scenarios,
+    prepare_pls_plot_data,
+)
 
 
-def test_remaining_plotting_placeholders_raise():
-    # make_chill_plot is now implemented for data preparation
-    # but still raises TypeError if called without arguments
+def test_plotting_functions_require_inputs():
     with pytest.raises(TypeError):
         make_chill_plot()
-    
-    # plot_pls now requires an argument
     with pytest.raises(TypeError):
         plot_pls()
+
+
+def test_make_chill_plot_returns_matplotlib_objects_and_data():
+    dc = pd.DataFrame(
+        {
+            "Year": [2000] * 4 + [2001] * 4,
+            "Month": [1] * 8,
+            "Day": [1, 2, 3, 4] * 2,
+            "Chill": [1.0, 2.0, 3.0, 4.0, 2.0, 4.0, 6.0, 8.0],
+        }
+    )
+
+    result = make_chill_plot(
+        {"daily_chill": dc},
+        metrics=["Chill"],
+        startdate=1,
+        enddate=4,
+        focusyears=[2001],
+        cumulative=False,
+    )
+
+    assert isinstance(result["figure"], Figure)
+    assert isinstance(result["axes"][0], Axes)
+    assert "Chill" in result
+    pd.testing.assert_series_equal(
+        result["Chill"]["Mean"],
+        pd.Series([1.5, 3.0, 4.5, 6.0], name="Mean"),
+        check_dtype=False,
+    )
+
+
+def test_plot_pls_returns_vip_and_coefficient_figure():
+    pls_res = {"PLS_summary": pd.DataFrame({"Date": [101, 102], "VIP": [0.6, 1.2], "Coef": [-0.5, 0.8]})}
+
+    result = plot_pls(pls_res, vip_threshold=0.8)
+
+    assert isinstance(result["figure"], Figure)
+    assert len(result["axes"]) == 2
+    assert list(result["data"]["VIP"]) == [0.6, 1.2]
+
+
+def test_plot_climate_scenarios_returns_boxplot_and_legend():
+    climate = [
+        {
+            "data": {
+                "2000": pd.DataFrame({"Chill": [10.0, 12.0]}),
+                "2005": pd.DataFrame({"Chill": [11.0, 13.0]}),
+            },
+            "caption": ["Historic"],
+            "time_series": True,
+            "labels": [2000, 2005],
+        },
+        {
+            "data": {
+                "ModelA": pd.DataFrame({"Chill": [15.0, 16.0]}),
+                "ModelB": pd.DataFrame({"Chill": [17.0, 18.0]}),
+            },
+            "caption": ["Scenario", "2050"],
+            "labels": ["Model A", "Model B"],
+        },
+    ]
+
+    result = plot_climate_scenarios(climate, metric="Chill", metric_label="Chill portions", reference_line=[14])
+
+    assert isinstance(result["figure"], Figure)
+    assert len(result["axes"]) == 2
+    assert set(result["data"]["panel"]) == {"Historic", "Scenario\n2050"}
+    assert result["legend"][0]["Label"].tolist() == [2000, 2005]
+
+
+def test_plot_scenarios_returns_combined_scenario_boxplot():
+    scenarios = [
+        {
+            "data": {"2000": pd.DataFrame({"Chill": [1.0, 2.0]})},
+            "caption": ["Historic"],
+            "labels": [2000],
+            "historic_data": pd.DataFrame({"End_year": [1999], "Chill": [1.5]}),
+        },
+        {
+            "data": {"M1": pd.DataFrame({"Chill": [3.0, 4.0]})},
+            "caption": ["Future", "2050"],
+            "labels": ["M1"],
+        },
+    ]
+
+    result = plot_scenarios(scenarios, metric="Chill", add_historic=True)
+
+    assert isinstance(result["figure"], Figure)
+    assert {"Historic", "Future 2050", "Observed"}.issubset(set(result["data"]["Scenario"]))
+
+
+def test_plot_phenology_trends_with_weather_returns_response_surface():
+    weather_rows = []
+    for year, offset in [(2000, 0.0), (2001, 1.0), (2002, 2.0), (2003, 3.0)]:
+        for date in pd.date_range(f"{year}-01-01", f"{year}-12-31", freq="D"):
+            seasonal = np.sin(date.dayofyear / 365 * 2 * np.pi)
+            weather_rows.append(
+                {
+                    "Year": date.year,
+                    "Month": date.month,
+                    "Day": date.day,
+                    "Tmin": 2.0 + offset + seasonal,
+                    "Tmax": 10.0 + offset + seasonal,
+                }
+            )
+    pheno = pd.DataFrame({"Year": [2000, 2001, 2002, 2003], "pheno": [100, 104, 108, 112]})
+
+    result = plot_phenology_trends(
+        pheno,
+        pd.DataFrame(weather_rows),
+        chilling_phase=[1, 30],
+        forcing_phase=[60, 90],
+    )
+
+    assert isinstance(result["figure"], Figure)
+    assert {"Tmean_chilling_period", "Tmean_forcing_period", "pheno"}.issubset(result["data"].columns)
+
+
+def test_plot_scenarios_rejects_missing_metric():
+    with pytest.raises(ValueError, match="metric must be specified"):
+        plot_scenarios([{"data": {"a": pd.DataFrame({"x": [1]})}, "caption": ["A"]}])
 
 
 def test_color_bar_maker_matches_r_threshold_logic():

@@ -2,6 +2,11 @@ import pytest
 import pandas as pd
 import numpy as np
 import warnings
+import matplotlib
+
+matplotlib.use("Agg")
+from matplotlib.figure import Figure
+
 from chillPy.scenarios import extract_cmip6_data, download_cmip6_ecmwfr, extract_temperatures_from_grids
 from chillPy.plotting import make_daily_chill_figures, plot_pls, plot_phenology_trends
 
@@ -47,26 +52,26 @@ def test_make_daily_chill_figures():
             "GDH": [1, 2]
         })
     }
-    with pytest.warns(UserWarning, match="currently only returns summary data"):
-        res = make_daily_chill_figures(dc, "output/")
-        assert "daily_chill_figure_summary" in res
-        assert isinstance(res["daily_chill_figure_summary"], pd.DataFrame)
+    res = make_daily_chill_figures(dc, "output/")
+    assert "daily_chill_figure_summary" in res
+    assert isinstance(res["daily_chill_figure_summary"], pd.DataFrame)
+    assert isinstance(res["figure"], Figure)
+    assert len(res["axes"]) == 4
 
 def test_plot_pls():
     pls_res = {
         "PLS_summary": pd.DataFrame({"Date": [101], "VIP": [1.0], "Coef": [0.5]})
     }
-    with pytest.warns(UserWarning, match="currently only returns summary data"):
-        res = plot_pls(pls_res)
-        assert isinstance(res, pd.DataFrame)
-        assert "VIP" in res.columns
+    res = plot_pls(pls_res)
+    assert isinstance(res["figure"], Figure)
+    assert "VIP" in res["data"].columns
 
 def test_plot_phenology_trends():
     pheno_data = pd.DataFrame({
         "Year": [2000, 2001, 2002],
         "pheno": [100, 102, 104]
     })
-    with pytest.warns(UserWarning, match="currently only returns data with trend"):
-        res = plot_phenology_trends(pheno_data)
-        assert "trend" in res.columns
-        assert not res["trend"].isna().all()
+    res = plot_phenology_trends(pheno_data)
+    assert isinstance(res["figure"], Figure)
+    assert "trend" in res["data"].columns
+    assert not res["data"]["trend"].isna().all()

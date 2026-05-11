@@ -53,26 +53,26 @@ the initial Python scaffold. Status values:
 | `convert_scen_information` | `convert_scen_information` | `chillPy.scenarios` | implemented |
 | `daily_chill` | `daily_chill` | `chillPy.temperature` | implemented |
 | `daylength` | `daylength` | `chillPy.date_utils` | implemented |
-| `download_baseline_cmip6_ecmwfr` | `download_baseline_cmip6_ecmwfr` | `chillPy.scenarios` | implemented |
-| `download_cmip6_ecmwfr` | `download_cmip6_ecmwfr` | `chillPy.scenarios` | implemented |
-| `extract_cmip6_data` | `extract_cmip6_data` | `chillPy.scenarios` | implemented |
+| `download_baseline_cmip6_ecmwfr` | `download_baseline_cmip6_ecmwfr` | `chillPy.scenarios` | partial |
+| `download_cmip6_ecmwfr` | `download_cmip6_ecmwfr` | `chillPy.scenarios` | partial |
+| `extract_cmip6_data` | `extract_cmip6_data` | `chillPy.scenarios` | partial |
 | `extract_differences_between_characters` | `extract_differences_between_characters` | `chillPy.utils` | implemented |
-| `extract_temperatures_from_grids` | `extract_temperatures_from_grids` | `chillPy.scenarios` | implemented |
+| `extract_temperatures_from_grids` | `extract_temperatures_from_grids` | `chillPy.scenarios` | partial |
 | `filter_temperatures` | `filter_temperatures` | `chillPy.temperature` | implemented |
 | `fix_weather` | `fix_weather` | `chillPy.weather` | implemented |
 | `genSeason` | `gen_season` | `chillPy.phenology` | implemented |
 | `genSeasonList` | `gen_season_list` | `chillPy.phenology` | implemented |
 | `gen_rel_change_scenario` | `gen_rel_change_scenario` | `chillPy.scenarios` | implemented |
-| `getClimateWizardData` | `get_climate_wizard_data` | `chillPy.scenarios` | implemented |
-| `getClimateWizard_scenarios` | `get_climate_wizard_scenarios` | `chillPy.scenarios` | implemented |
+| `getClimateWizardData` | `get_climate_wizard_data` | `chillPy.scenarios` | partial |
+| `getClimateWizard_scenarios` | `get_climate_wizard_scenarios` | `chillPy.scenarios` | partial |
 | `get_last_date` | `get_last_date` | `chillPy.date_utils` | implemented |
-| `get_weather` | `get_weather` | `chillPy.weather` | implemented |
-| `handle_cimis` | `handle_cimis` | `chillPy.weather` | implemented |
-| `handle_dwd` | `handle_dwd` | `chillPy.weather` | implemented |
-| `handle_dwd_old` | `handle_dwd_old` | `chillPy.weather` | implemented |
-| `handle_gsod` | `handle_gsod` | `chillPy.weather` | implemented |
-| `handle_gsod_old` | `handle_gsod_old` | `chillPy.weather` | implemented |
-| `handle_ucipm` | `handle_ucipm` | `chillPy.weather` | implemented |
+| `get_weather` | `get_weather` | `chillPy.weather` | partial |
+| `handle_cimis` | `handle_cimis` | `chillPy.weather` | partial |
+| `handle_dwd` | `handle_dwd` | `chillPy.weather` | partial |
+| `handle_dwd_old` | `handle_dwd_old` | `chillPy.weather` | partial |
+| `handle_gsod` | `handle_gsod` | `chillPy.weather` | partial |
+| `handle_gsod_old` | `handle_gsod_old` | `chillPy.weather` | partial |
+| `handle_ucipm` | `handle_ucipm` | `chillPy.weather` | partial |
 | `identify_common_string` | `identify_common_string` | `chillPy.utils` | implemented |
 | `interpolate_gaps` | `interpolate_gaps` | `chillPy.temperature` | implemented |
 | `interpolate_gaps_hourly` | `interpolate_gaps_hourly` | `chillPy.temperature` | implemented |
@@ -81,7 +81,7 @@ the initial Python scaffold. Status values:
 | `load_temperature_scenarios` | `load_temperature_scenarios` | `chillPy.scenarios` | implemented |
 | `make_JDay` | `make_jday` | `chillPy.date_utils` | implemented |
 | `make_all_day_table` | `make_all_day_table` | `chillPy.temperature` | implemented |
-| `make_california_UCIPM_station_list` | `make_california_ucipm_station_list` | `chillPy.weather` | implemented |
+| `make_california_UCIPM_station_list` | `make_california_ucipm_station_list` | `chillPy.weather` | partial |
 | `make_chill_plot` | `make_chill_plot` | `chillPy.plotting` | implemented |
 | `make_climate_scenario` | `make_climate_scenario` | `chillPy.scenarios` | implemented |
 | `make_climate_scenario_from_files` | `make_climate_scenario_from_files` | `chillPy.scenarios` | implemented |
@@ -125,9 +125,9 @@ the initial Python scaffold. Status values:
   `ValueError`.
 - `Dynamic_Model` / `DynModel_driver`: missing temperatures raise `ValueError`.
   The R code does not define a robust missing-value path for these recurrences.
-- `tempResponse_daily_list`: the idealized hourly-temperature path through
-  `stack_hourly_temps` is implemented. The empirical path remains unavailable
-  until `Empirical_hourly_temperatures` is ported.
+- `tempResponse_daily_list`: daily records can be converted to hourly records
+  through either `stack_hourly_temps` or empirical coefficients produced by
+  `Empirical_daily_temperature_curve`.
 - `temperature_generation`: Python implements the chillR interface, scenario
   validation, complete calibration-record checks, reference-year checks, and
   seedable daily simulation by bootstrapping calibrated daily anomalies. The R
@@ -170,9 +170,10 @@ the initial Python scaffold. Status values:
   daily records are aggregated by the underlying `make_all_day_table` helper.
 - `weather2chillR`: deterministic local conversion paths are implemented for
   GSOD, CIMIS, and UCIPM-style downloaded tables. Network download/list/delete
-  handler actions remain placeholders. GSOD conversion follows the handler's
-  full-year completion behavior; CIMIS/UCIPM conversions normalize columns,
-  parse dates when needed, sort records, and aggregate duplicate dates.
+  handler actions in `get_weather` and the `handle_*` functions remain
+  unsupported. GSOD conversion follows the handler's full-year completion
+  behavior; CIMIS/UCIPM conversions normalize columns, parse dates when needed,
+  sort records, and aggregate duplicate dates.
 - `chile_agromet2chillR`: Chile Agromet HTML/table conversion is implemented
   without adding XML dependencies. Python accepts either a path to an HTML table
   or an already-loaded DataFrame, validates malformed dates explicitly, and
@@ -198,11 +199,16 @@ the initial Python scaffold. Status values:
   than `"none"` are not implemented.
 - `color_bar_maker`: the deterministic threshold/sign color assignment used by
   R `plot_PLS` is implemented without graphics dependencies.
-- `plot_PLS`: rendering remains a stub. Python provides
-  `prepare_pls_plot_data` as a non-rendering helper that validates PLS outputs,
-  classifies important rows by VIP threshold and coefficient sign, extracts
-  contiguous important windows, and prepares bloom/chill/heat overlay tables for
-  a future plotting layer.
+- Plotting functions: R base graphics and ggplot/patchwork outputs are rendered
+  with matplotlib. Functions return dictionaries containing prepared data,
+  `figure`, and `axes` objects and do not call `show()`. `prepare_pls_plot_data`
+  remains available as a non-rendering helper for PLS interpretation tables.
+- External climate data helpers: ClimateWizard, CMIP6 download/extraction,
+  gridded raster extraction, and UCIPM station scraping are partial because they
+  require external services or optional heavy dependencies (`requests`, `cdsapi`,
+  `xarray`/netCDF, `rasterio`, BeautifulSoup). Local validation and formatting
+  paths are implemented; unavailable external paths raise explicit errors or
+  return documented empty placeholder structures.
 - `bloom_prediction`, `bloom_prediction2`, and `bloom_prediction3`: sequential
   chill-then-heat prediction is implemented for scalar, paired vector,
   permutation, and hourly-temperature workflows. Python returns pandas

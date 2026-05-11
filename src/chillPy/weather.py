@@ -1,4 +1,4 @@
-"""Weather import, checking, and station-handler placeholders from chillR."""
+"""Weather import, checking, and station-handler helpers from chillR."""
 
 from __future__ import annotations
 

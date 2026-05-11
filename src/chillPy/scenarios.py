@@ -1,4 +1,4 @@
-"""Climate and temperature scenario placeholders mapped from chillR."""
+"""Climate and temperature scenario helpers mapped from chillR."""
 
 from __future__ import annotations
 
