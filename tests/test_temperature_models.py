@@ -74,5 +74,6 @@ def test_temperature_models_validate_inputs():
 
 def test_phenoflex_placeholder_shape():
     result = PhenoFlex([1.0, 2.0], [0, 1])
-    assert result["object_type"] == "PhenoFlex"
+    # PhenoFlex is implemented, it returns a dict with several keys
+    assert "bloomindex" in result
     assert result["values"].shape == (2,)

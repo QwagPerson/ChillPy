@@ -2,14 +2,18 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from chillPy import PLS_pheno, color_bar_maker, make_chill_plot, plot_PLS, prepare_pls_plot_data
+from chillPy import PLS_pheno, color_bar_maker, make_chill_plot, plot_pls, prepare_pls_plot_data
 
 
 def test_remaining_plotting_placeholders_raise():
-    with pytest.raises(NotImplementedError):
+    # make_chill_plot is now implemented for data preparation
+    # but still raises TypeError if called without arguments
+    with pytest.raises(TypeError):
         make_chill_plot()
-    with pytest.raises(NotImplementedError):
-        plot_PLS()
+    
+    # plot_pls now requires an argument
+    with pytest.raises(TypeError):
+        plot_pls()
 
 
 def test_color_bar_maker_matches_r_threshold_logic():

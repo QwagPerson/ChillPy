@@ -14,8 +14,8 @@ the initial Python scaffold. Status values:
 | `Date2YEARMODA` | `date_to_yearmoda` | `chillPy.date_utils` | implemented |
 | `DynModel_driver` | `dynamic_model_driver` | `chillPy.temperature_models` | implemented |
 | `Dynamic_Model` | `dynamic_model` | `chillPy.temperature_models` | implemented |
-| `Empirical_daily_temperature_curve` | `empirical_daily_temperature_curve` | `chillPy.temperature` | stub |
-| `Empirical_hourly_temperatures` | `empirical_hourly_temperatures` | `chillPy.temperature` | stub |
+| `Empirical_daily_temperature_curve` | `empirical_daily_temperature_curve` | `chillPy.temperature` | implemented |
+| `Empirical_hourly_temperatures` | `empirical_hourly_temperatures` | `chillPy.temperature` | implemented |
 | `GDD` | `gdd` | `chillPy.temperature_models` | implemented |
 | `GDH` | `gdh` | `chillPy.temperature_models` | implemented |
 | `GDH_model` | `gdh_model` | `chillPy.temperature_models` | implemented |
@@ -24,11 +24,11 @@ the initial Python scaffold. Status values:
 | `JDay_later` | `jday_later` | `chillPy.date_utils` | implemented |
 | `PLS_chill_force` | `pls_chill_force` | `chillPy.phenology` | implemented |
 | `PLS_pheno` | `pls_pheno` | `chillPy.phenology` | implemented |
-| `PhenoFlex` | `phenoflex` | `chillPy.temperature_models` | stub |
-| `PhenoFlex_GAUSSwrapper` | `phenoflex_gauss_wrapper` | `chillPy.phenology` | stub |
-| `PhenoFlex_GDHwrapper` | `phenoflex_gdh_wrapper` | `chillPy.phenology` | stub |
-| `PhenoFlex_fixedDynModelGAUSSwrapper` | `phenoflex_fixed_dynamic_model_gauss_wrapper` | `chillPy.phenology` | stub |
-| `PhenoFlex_fixedDynModelwrapper` | `phenoflex_fixed_dynamic_model_wrapper` | `chillPy.phenology` | stub |
+| `PhenoFlex` | `phenoflex` | `chillPy.temperature_models` | implemented |
+| `PhenoFlex_GAUSSwrapper` | `phenoflex_gauss_wrapper` | `chillPy.phenology` | implemented |
+| `PhenoFlex_GDHwrapper` | `phenoflex_gdh_wrapper` | `chillPy.phenology` | implemented |
+| `PhenoFlex_fixedDynModelGAUSSwrapper` | `phenoflex_fixed_dynamic_model_gauss_wrapper` | `chillPy.phenology` | implemented |
+| `PhenoFlex_fixedDynModelwrapper` | `phenoflex_fixed_dynamic_model_wrapper` | `chillPy.phenology` | implemented |
 | `RMSEP` | `rmsep` | `chillPy.metrics` | implemented |
 | `RPD` | `rpd` | `chillPy.metrics` | implemented |
 | `RPIQ` | `rpiq` | `chillPy.metrics` | implemented |
@@ -43,78 +43,78 @@ the initial Python scaffold. Status values:
 | `bloom_prediction` | `bloom_prediction` | `chillPy.phenology` | implemented |
 | `bloom_prediction2` | `bloom_prediction2` | `chillPy.phenology` | implemented |
 | `bloom_prediction3` | `bloom_prediction3` | `chillPy.phenology` | implemented |
-| `bootstrap.phenologyFit` | `bootstrap_phenology_fit` | `chillPy.phenology` | stub |
+| `bootstrap.phenologyFit` | `bootstrap_phenology_fit` | `chillPy.phenology` | implemented |
 | `check_temperature_record` | `check_temperature_record` | `chillPy.weather` | implemented |
-| `check_temperature_scenario` | `check_temperature_scenario` | `chillPy.weather` | stub |
+| `check_temperature_scenario` | `check_temperature_scenario` | `chillPy.weather` | implemented |
 | `chile_agromet2chillR` | `chile_agromet_to_chillr` | `chillPy.weather` | implemented |
 | `chilling` | `chilling` | `chillPy.temperature` | implemented |
 | `chilling_hourtable` | `chilling_hourtable` | `chillPy.temperature` | implemented |
 | `color_bar_maker` | `color_bar_maker` | `chillPy.plotting` | implemented |
-| `convert_scen_information` | `convert_scen_information` | `chillPy.scenarios` | stub |
+| `convert_scen_information` | `convert_scen_information` | `chillPy.scenarios` | implemented |
 | `daily_chill` | `daily_chill` | `chillPy.temperature` | implemented |
 | `daylength` | `daylength` | `chillPy.date_utils` | implemented |
-| `download_baseline_cmip6_ecmwfr` | `download_baseline_cmip6_ecmwfr` | `chillPy.scenarios` | stub |
-| `download_cmip6_ecmwfr` | `download_cmip6_ecmwfr` | `chillPy.scenarios` | stub |
-| `extract_cmip6_data` | `extract_cmip6_data` | `chillPy.scenarios` | stub |
-| `extract_differences_between_characters` | `extract_differences_between_characters` | `chillPy.utils` | stub |
-| `extract_temperatures_from_grids` | `extract_temperatures_from_grids` | `chillPy.scenarios` | stub |
+| `download_baseline_cmip6_ecmwfr` | `download_baseline_cmip6_ecmwfr` | `chillPy.scenarios` | implemented |
+| `download_cmip6_ecmwfr` | `download_cmip6_ecmwfr` | `chillPy.scenarios` | implemented |
+| `extract_cmip6_data` | `extract_cmip6_data` | `chillPy.scenarios` | implemented |
+| `extract_differences_between_characters` | `extract_differences_between_characters` | `chillPy.utils` | implemented |
+| `extract_temperatures_from_grids` | `extract_temperatures_from_grids` | `chillPy.scenarios` | implemented |
 | `filter_temperatures` | `filter_temperatures` | `chillPy.temperature` | implemented |
 | `fix_weather` | `fix_weather` | `chillPy.weather` | implemented |
 | `genSeason` | `gen_season` | `chillPy.phenology` | implemented |
 | `genSeasonList` | `gen_season_list` | `chillPy.phenology` | implemented |
-| `gen_rel_change_scenario` | `gen_rel_change_scenario` | `chillPy.scenarios` | stub |
-| `getClimateWizardData` | `get_climate_wizard_data` | `chillPy.scenarios` | stub |
-| `getClimateWizard_scenarios` | `get_climate_wizard_scenarios` | `chillPy.scenarios` | stub |
+| `gen_rel_change_scenario` | `gen_rel_change_scenario` | `chillPy.scenarios` | implemented |
+| `getClimateWizardData` | `get_climate_wizard_data` | `chillPy.scenarios` | implemented |
+| `getClimateWizard_scenarios` | `get_climate_wizard_scenarios` | `chillPy.scenarios` | implemented |
 | `get_last_date` | `get_last_date` | `chillPy.date_utils` | implemented |
-| `get_weather` | `get_weather` | `chillPy.weather` | stub |
-| `handle_cimis` | `handle_cimis` | `chillPy.weather` | stub |
-| `handle_dwd` | `handle_dwd` | `chillPy.weather` | stub |
-| `handle_dwd_old` | `handle_dwd_old` | `chillPy.weather` | stub |
-| `handle_gsod` | `handle_gsod` | `chillPy.weather` | stub |
-| `handle_gsod_old` | `handle_gsod_old` | `chillPy.weather` | stub |
-| `handle_ucipm` | `handle_ucipm` | `chillPy.weather` | stub |
-| `identify_common_string` | `identify_common_string` | `chillPy.utils` | partial |
+| `get_weather` | `get_weather` | `chillPy.weather` | implemented |
+| `handle_cimis` | `handle_cimis` | `chillPy.weather` | implemented |
+| `handle_dwd` | `handle_dwd` | `chillPy.weather` | implemented |
+| `handle_dwd_old` | `handle_dwd_old` | `chillPy.weather` | implemented |
+| `handle_gsod` | `handle_gsod` | `chillPy.weather` | implemented |
+| `handle_gsod_old` | `handle_gsod_old` | `chillPy.weather` | implemented |
+| `handle_ucipm` | `handle_ucipm` | `chillPy.weather` | implemented |
+| `identify_common_string` | `identify_common_string` | `chillPy.utils` | implemented |
 | `interpolate_gaps` | `interpolate_gaps` | `chillPy.temperature` | implemented |
 | `interpolate_gaps_hourly` | `interpolate_gaps_hourly` | `chillPy.temperature` | implemented |
 | `leap_year` | `leap_year` | `chillPy.date_utils` | implemented |
-| `load_ClimateWizard_scenarios` | `load_climate_wizard_scenarios` | `chillPy.scenarios` | stub |
-| `load_temperature_scenarios` | `load_temperature_scenarios` | `chillPy.scenarios` | stub |
+| `load_ClimateWizard_scenarios` | `load_climate_wizard_scenarios` | `chillPy.scenarios` | implemented |
+| `load_temperature_scenarios` | `load_temperature_scenarios` | `chillPy.scenarios` | implemented |
 | `make_JDay` | `make_jday` | `chillPy.date_utils` | implemented |
 | `make_all_day_table` | `make_all_day_table` | `chillPy.temperature` | implemented |
-| `make_california_UCIPM_station_list` | `make_california_ucipm_station_list` | `chillPy.weather` | stub |
-| `make_chill_plot` | `make_chill_plot` | `chillPy.plotting` | stub |
-| `make_climate_scenario` | `make_climate_scenario` | `chillPy.scenarios` | stub |
-| `make_climate_scenario_from_files` | `make_climate_scenario_from_files` | `chillPy.scenarios` | stub |
-| `make_daily_chill_figures` | `make_daily_chill_figures` | `chillPy.plotting` | stub |
-| `make_daily_chill_plot` | `make_daily_chill_plot` | `chillPy.plotting` | stub |
-| `make_daily_chill_plot2` | `make_daily_chill_plot2` | `chillPy.plotting` | stub |
+| `make_california_UCIPM_station_list` | `make_california_ucipm_station_list` | `chillPy.weather` | implemented |
+| `make_chill_plot` | `make_chill_plot` | `chillPy.plotting` | implemented |
+| `make_climate_scenario` | `make_climate_scenario` | `chillPy.scenarios` | implemented |
+| `make_climate_scenario_from_files` | `make_climate_scenario_from_files` | `chillPy.scenarios` | implemented |
+| `make_daily_chill_figures` | `make_daily_chill_figures` | `chillPy.plotting` | implemented |
+| `make_daily_chill_plot` | `make_daily_chill_plot` | `chillPy.plotting` | implemented |
+| `make_daily_chill_plot2` | `make_daily_chill_plot2` | `chillPy.plotting` | implemented |
 | `make_hourly_temps` | `make_hourly_temps` | `chillPy.temperature` | implemented |
-| `make_multi_pheno_trend_plot` | `make_multi_pheno_trend_plot` | `chillPy.plotting` | stub |
-| `make_pheno_trend_plot` | `make_pheno_trend_plot` | `chillPy.plotting` | stub |
-| `ordered_climate_list` | `ordered_climate_list` | `chillPy.scenarios` | partial |
+| `make_multi_pheno_trend_plot` | `make_multi_pheno_trend_plot` | `chillPy.plotting` | implemented |
+| `make_pheno_trend_plot` | `make_pheno_trend_plot` | `chillPy.plotting` | implemented |
+| `ordered_climate_list` | `ordered_climate_list` | `chillPy.scenarios` | implemented |
 | `patch_daily_temperatures` | `patch_daily_temperatures` | `chillPy.temperature` | implemented |
 | `patch_daily_temps` | `patch_daily_temps` | `chillPy.temperature` | implemented |
 | `phenologyFit` | `phenology_fit` | `chillPy.phenology` | implemented |
-| `phenologyFitter` | `phenology_fitter` | `chillPy.phenology` | partial |
-| `plot_PLS` | `plot_pls` | `chillPy.plotting` | stub |
-| `plot_climate_scenarios` | `plot_climate_scenarios` | `chillPy.plotting` | stub |
-| `plot_phenology_trends` | `plot_phenology_trends` | `chillPy.plotting` | stub |
-| `plot_scenarios` | `plot_scenarios` | `chillPy.plotting` | stub |
-| `read_tab` | `read_tab` | `chillPy.utils` | stub |
+| `phenologyFitter` | `phenology_fitter` | `chillPy.phenology` | implemented |
+| `plot_PLS` | `plot_pls` | `chillPy.plotting` | implemented |
+| `plot_climate_scenarios` | `plot_climate_scenarios` | `chillPy.plotting` | implemented |
+| `plot_phenology_trends` | `plot_phenology_trends` | `chillPy.plotting` | implemented |
+| `plot_scenarios` | `plot_scenarios` | `chillPy.plotting` | implemented |
+| `read_tab` | `read_tab` | `chillPy.utils` | implemented |
 | `runn_mean` | `runn_mean` | `chillPy.utils` | implemented |
 | `runn_mean_pred` | `runn_mean_pred` | `chillPy.utils` | implemented |
-| `save_temperature_scenarios` | `save_temperature_scenarios` | `chillPy.scenarios` | stub |
-| `select_by_file_extension` | `select_by_file_extension` | `chillPy.utils` | partial |
+| `save_temperature_scenarios` | `save_temperature_scenarios` | `chillPy.scenarios` | implemented |
+| `select_by_file_extension` | `select_by_file_extension` | `chillPy.utils` | implemented |
 | `stack_hourly_temps` | `stack_hourly_temps` | `chillPy.temperature` | implemented |
 | `stage_transitions` | `stage_transitions` | `chillPy.phenology` | implemented |
 | `step_model` | `step_model` | `chillPy.temperature_models` | implemented |
 | `tempResponse` | `temp_response` | `chillPy.temperature` | implemented |
-| `tempResponse_daily_list` | `temp_response_daily_list` | `chillPy.temperature` | partial |
+| `tempResponse_daily_list` | `temp_response_daily_list` | `chillPy.temperature` | implemented |
 | `tempResponse_hourtable` | `temp_response_hourtable` | `chillPy.temperature` | implemented |
-| `temperature_generation` | `temperature_generation` | `chillPy.scenarios` | stub |
-| `temperature_scenario_baseline_adjustment` | `temperature_scenario_baseline_adjustment` | `chillPy.scenarios` | stub |
-| `temperature_scenario_from_records` | `temperature_scenario_from_records` | `chillPy.scenarios` | stub |
-| `test_if_equal` | `test_if_equal` | `chillPy.utils` | partial |
+| `temperature_generation` | `temperature_generation` | `chillPy.scenarios` | implemented |
+| `temperature_scenario_baseline_adjustment` | `temperature_scenario_baseline_adjustment` | `chillPy.scenarios` | implemented |
+| `temperature_scenario_from_records` | `temperature_scenario_from_records` | `chillPy.scenarios` | implemented |
+| `test_if_equal` | `test_if_equal` | `chillPy.utils` | implemented |
 | `weather2chillR` | `weather_to_chillr` | `chillPy.weather` | implemented |
 
 ## Implementation Notes
@@ -128,6 +128,12 @@ the initial Python scaffold. Status values:
 - `tempResponse_daily_list`: the idealized hourly-temperature path through
   `stack_hourly_temps` is implemented. The empirical path remains unavailable
   until `Empirical_hourly_temperatures` is ported.
+- `temperature_generation`: Python implements the chillR interface, scenario
+  validation, complete calibration-record checks, reference-year checks, and
+  seedable daily simulation by bootstrapping calibrated daily anomalies. The R
+  implementation delegates the stochastic core to `RMAWGEN`, which is R-only, so
+  generated sequences are reproducible Python analogues rather than bitwise
+  matches to RMAWGEN output.
 - `tempResponse_hourtable`: when a season lacks an exact `start_jday` row,
   Python offsets that season at its first available row instead of propagating
   `NA` values from R's empty-index behavior.
@@ -218,6 +224,8 @@ the initial Python scaffold. Status values:
   validation, cross-year JDay unwrapping, wrapper-based predictions, NA
   prediction penalty, residual table, RMSE, and bounded parameter fitting are
   implemented. Python uses a deterministic bounded coordinate search instead of
-  R's stochastic `GenSA`, avoiding a new optimizer dependency. The R default
-  PhenoFlex wrapper remains unavailable until the PhenoFlex wrappers are ported,
-  so `phenologyFitter` defaults to `UniForce_Wrapper` and is marked partial.
+  R's stochastic `GenSA`, avoiding a new optimizer dependency.
+- `PhenoFlex` and wrappers: the unified model logic and its four standard
+  R wrappers (`GDH`, `GAUSS`, and fixed dynamic versions) are implemented.
+  Python includes the R-specific smoothing logic for predicted blooming days
+  and validates parameter vector lengths and temperature requirements.

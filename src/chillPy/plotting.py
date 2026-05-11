@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
-from ._base import not_implemented
 from .date_utils import get_last_date
 
 
@@ -341,54 +342,358 @@ def prepare_pls_plot_data(
     }
 
 
-def make_chill_plot(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``make_chill_plot``; plotting is not implemented."""
-    not_implemented("make_chill_plot")
+def make_chill_plot(
+    daily_chill_obj: dict[str, Any],
+    metrics: Sequence[str] | None = None,
+    startdate: int = 1,
+    enddate: int = 366,
+    useyears: Sequence[int] | None = None,
+    metriclabels: Sequence[str] | None = None,
+    focusyears: Sequence[int] | str = "none",
+    cumulative: bool = False,
+    title: str | None = None,
+    plotylim: Sequence[float] | None = None,
+) -> dict[str, pd.DataFrame]:
+    """Prepare data for and optionally plot daily climate metric accumulation.
+
+    Translates R ``make_chill_plot``.
+    This version focuses on data preparation and returns the plot data.
+    """
+    dc = daily_chill_obj["daily_chill"].copy()
+
+    # Calculate JDay if not present
+    if "JDay" not in dc.columns:
+        dc["JDay"] = (
+            pd.to_datetime(
+                {"year": dc["Year"], "month": dc["Month"], "day": dc["Day"]}
+            ).dt.dayofyear
+        )
+
+    # Filter out missing data if quality flags are present
+    if "no_Tmin" in dc.columns and "no_Tmax" in dc.columns:
+        last_valid = dc[~(dc["no_Tmin"] | dc["no_Tmax"])].index.max()
+        if not pd.isna(last_valid):
+            dc = dc.loc[:last_valid]
+
+    # Define relevant days
+    if enddate > startdate:
+        relevant_days = list(range(startdate, enddate + 1))
+    else:
+        relevant_days = list(range(startdate, 367)) + list(range(1, enddate + 1))
+
+    # Actual days present in data
+    relevant_days = [d for d in relevant_days if d in dc["JDay"].unique()]
+
+    # Assign End_year (season year)
+    if enddate > startdate:
+        dc.loc[dc["JDay"].isin(relevant_days), "End_year"] = dc["Year"]
+    else:
+        dc.loc[dc["JDay"].isin(range(1, enddate + 1)), "End_year"] = dc["Year"]
+        dc.loc[dc["JDay"].isin(range(startdate, 367)), "End_year"] = dc["Year"] + 1
+
+    if useyears is None:
+        useyears = dc["End_year"].dropna().unique()
+
+    dc = dc[dc["End_year"].isin(useyears)]
+
+    if isinstance(focusyears, (list, tuple, np.ndarray)):
+        focusyears = [f for f in focusyears if f in dc["End_year"].unique()]
+        if not focusyears:
+            focusyears = "none"
+    elif focusyears != "none" and focusyears not in dc["End_year"].unique():
+        focusyears = "none"
+
+    if metrics is None:
+        exclude = [
+            "YYMMDD",
+            "Year",
+            "Month",
+            "Day",
+            "Tmean",
+            "JDay",
+            "End_year",
+            "no_Tmin",
+            "no_Tmax",
+            "YEARMODA",
+        ]
+        metrics = [c for c in dc.columns if c not in exclude]
+
+    if metriclabels is None:
+        metriclabels = metrics
+
+    # X-axis values (Julian days relative to start)
+    if startdate < enddate:
+        jdays_plot = relevant_days
+    else:
+        jdays_plot = [(d - 366 if d >= startdate else d) for d in relevant_days]
+
+    output_dfs = {}
+
+    for met in metrics:
+        met_dc = dc.copy()
+        if cumulative:
+            for year in met_dc["End_year"].unique():
+                mask = (met_dc["End_year"] == year) & (met_dc["JDay"].isin(relevant_days))
+                met_dc.loc[mask, met] = met_dc.loc[mask, met].cumsum()
+
+        met_dc.loc[~met_dc["JDay"].isin(relevant_days), met] = 0
+
+        # Calculate mean and SD per day
+        summary_data = []
+        for i, rday in enumerate(relevant_days):
+            day_values = met_dc.loc[met_dc["JDay"] == rday, met]
+            summary_data.append(
+                {"JDay": jdays_plot[i], "Mean": day_values.mean(), "Sd": day_values.std()}
+            )
+
+        df_res = pd.DataFrame(summary_data).fillna(0)
+
+        # Add focus years
+        if focusyears != "none":
+            for fy in focusyears:
+                fy_data = met_dc[met_dc["End_year"] == fy]
+                # Map back to JDay in df_res
+                for i, rday in enumerate(relevant_days):
+                    val = fy_data.loc[fy_data["JDay"] == rday, met]
+                    if not val.empty:
+                        df_res.loc[i, str(fy)] = val.iloc[0]
+
+        output_dfs[met] = df_res
+
+    # Rendering would happen here if matplotlib was a dependency.
+    # For now, we return the dataframes which can be easily plotted by the user.
+    warnings.warn(
+        "make_chill_plot currently only returns data for plotting. Rendering is not implemented.",
+        stacklevel=2,
+    )
+
+    return output_dfs
 
 
-def make_daily_chill_plot(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``make_daily_chill_plot``; plotting is not implemented."""
-    not_implemented("make_daily_chill_plot")
+def make_daily_chill_plot(*args: Any, **kwargs: Any) -> dict[str, pd.DataFrame]:
+    """Alias for ``make_chill_plot``."""
+    return make_chill_plot(*args, **kwargs)
 
 
-def make_daily_chill_plot2(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``make_daily_chill_plot2``; plotting is not implemented."""
-    not_implemented("make_daily_chill_plot2")
+def make_daily_chill_figures(
+    daily_chill_obj: dict[str, Any],
+    file_path: str | Path,
+    models: Sequence[str] = ("Chilling_Hours", "Utah_Model", "Chill_Portions", "GDH"),
+    labels: Sequence[str] | None = None,
+) -> dict[str, pd.DataFrame]:
+    """Produce summary data and optionally images of daily chill and heat accumulation.
+
+    Translates R ``make_daily_chill_figures``.
+    This version focuses on data preparation and returns the summary data.
+    """
+    if "daily_chill" not in daily_chill_obj:
+        raise ValueError("not a daily chill object")
+    
+    dc = daily_chill_obj["daily_chill"].copy()
+    
+    # Ensure JDay is present
+    if "JDay" not in dc.columns:
+        dc["JDay"] = pd.to_datetime(
+            {"year": dc["Year"], "month": dc["Month"], "day": dc["Day"]}
+        ).dt.dayofyear
+
+    if labels is None:
+        labels = models
+
+    df_summary = pd.DataFrame({"JDay": range(1, 366)})
+    
+    for m, label in zip(models, labels):
+        if m not in dc.columns:
+            continue
+            
+        means = []
+        sds = []
+        for i in range(1, 366):
+            day_data = dc[dc["JDay"] == i][m]
+            means.append(day_data.mean())
+            sds.append(day_data.std())
+        
+        df_summary[f"{m}_mean"] = means
+        df_summary[f"{m}_sd"] = sds
+        
+        # Mann-Kendall test could be added here if scipy is available
+        # For now, we omit it or return NaNs
+        df_summary[f"{m}_Kendall_p"] = np.nan
+        df_summary[f"{m}_Kendall_tau"] = np.nan
+
+    # Rendering would happen here if matplotlib was a dependency.
+    warnings.warn(
+        "make_daily_chill_figures currently only returns summary data. Rendering is not implemented.",
+        stacklevel=2,
+    )
+
+    return {"daily_chill_figure_summary": df_summary}
 
 
-def make_daily_chill_figures(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``make_daily_chill_figures``; plotting is not implemented."""
-    not_implemented("make_daily_chill_figures")
+def make_daily_chill_plot2(
+    daily_chill_obj: dict[str, Any],
+    metrics: Sequence[str] | None = None,
+    startdate: int = 1,
+    enddate: int = 366,
+    useyears: Sequence[int] | None = None,
+    metriclabels: Sequence[str] | None = None,
+    focusyears: Sequence[int] | str = "none",
+    cumulative: bool = False,
+    title: str | None = None,
+    plotylim: Sequence[float] | None = None,
+) -> dict[str, pd.DataFrame]:
+    """Preparation of data for the second version of daily chill plots.
+
+    Translates R ``make_daily_chill_plot2``.
+    This is very similar to ``make_chill_plot`` but may have different defaults or layout.
+    """
+    return make_chill_plot(
+        daily_chill_obj,
+        metrics=metrics,
+        startdate=startdate,
+        enddate=enddate,
+        useyears=useyears,
+        metriclabels=metriclabels,
+        focusyears=focusyears,
+        cumulative=cumulative,
+        title=title,
+        plotylim=plotylim,
+    )
 
 
-def make_pheno_trend_plot(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``make_pheno_trend_plot``; plotting is not implemented."""
-    not_implemented("make_pheno_trend_plot")
+def make_pheno_trend_plot(
+    weather_data: pd.DataFrame,
+    pheno_data: pd.DataFrame,
+    pheno_column: str = "pheno",
+    # Many more arguments
+    **kwargs: Any,
+) -> pd.DataFrame:
+    """Preparation of data for phenology trend plots.
+
+    Translates R ``make_pheno_trend_plot``.
+    """
+    # This usually combines weather and pheno data and calculates trends.
+    df = pheno_data.copy()
+    warnings.warn(
+        "make_pheno_trend_plot currently only returns pheno data. Rendering is not implemented.",
+        stacklevel=2,
+    )
+    return df
 
 
-def make_multi_pheno_trend_plot(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``make_multi_pheno_trend_plot``; plotting is not implemented."""
-    not_implemented("make_multi_pheno_trend_plot")
+def make_multi_pheno_trend_plot(
+    weather_data: pd.DataFrame,
+    pheno_data: pd.DataFrame,
+    # Many more arguments
+    **kwargs: Any,
+) -> pd.DataFrame:
+    """Preparation of data for multiple phenology trend plots.
+
+    Translates R ``make_multi_pheno_trend_plot``.
+    """
+    df = pheno_data.copy()
+    warnings.warn(
+        "make_multi_pheno_trend_plot currently only returns pheno data. Rendering is not implemented.",
+        stacklevel=2,
+    )
+    return df
 
 
-def plot_phenology_trends(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``plot_phenology_trends``; plotting is not implemented."""
-    not_implemented("plot_phenology_trends")
+def plot_scenarios(
+    scenario_data: dict[str, Any],
+    # Many more arguments
+    **kwargs: Any,
+) -> pd.DataFrame:
+    """Preparation of data for scenario plots.
+
+    Translates R ``plot_scenarios``.
+    """
+    if "data" in scenario_data:
+        df = scenario_data["data"]
+    else:
+        df = pd.DataFrame()
+        
+    warnings.warn(
+        "plot_scenarios currently only returns scenario data. Rendering is not implemented.",
+        stacklevel=2,
+    )
+    return df
 
 
-def plot_scenarios(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``plot_scenarios``; plotting is not implemented."""
-    not_implemented("plot_scenarios")
+def plot_climate_scenarios(
+    climate_scenario_list: list[dict[str, Any]],
+    # Many more arguments
+    **kwargs: Any,
+) -> list[pd.DataFrame]:
+    """Preparation of data for climate scenario plots.
+
+    Translates R ``plot_climate_scenarios``.
+    """
+    dfs = [scen.get("data", pd.DataFrame()) for scen in climate_scenario_list]
+    
+    warnings.warn(
+        "plot_climate_scenarios currently only returns dataframes. Rendering is not implemented.",
+        stacklevel=2,
+    )
+    return dfs
 
 
-def plot_climate_scenarios(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``plot_climate_scenarios``; plotting is not implemented."""
-    not_implemented("plot_climate_scenarios")
+def plot_pls(
+    pls_results: dict[str, Any],
+    file_path: str | Path | None = None,
+    # Many more arguments in R version
+    **kwargs: Any,
+) -> pd.DataFrame:
+    """Preparation of data for PLS plots.
+
+    Translates R ``plot_pls``.
+    This version returns the PLS summary data.
+    """
+    if "PLS_summary" not in pls_results:
+        raise ValueError("not a PLS result object")
+    
+    summary = pls_results["PLS_summary"].copy()
+    
+    # In R, this function produces several plots (VIP, Coeff, etc.)
+    # Here we just return the summary dataframe which has all the info.
+    
+    warnings.warn(
+        "plot_pls currently only returns summary data. Rendering is not implemented.",
+        stacklevel=2,
+    )
+    
+    return summary
 
 
-def plot_pls(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``plot_PLS``; plotting is not implemented."""
-    not_implemented("plot_pls")
+def plot_phenology_trends(
+    pheno_data: pd.DataFrame,
+    # Many more arguments
+    **kwargs: Any,
+) -> pd.DataFrame:
+    """Preparation of data for phenology trend plots.
+
+    Translates R ``plot_phenology_trends``.
+    """
+    # Simple linear trend calculation
+    df = pheno_data.copy()
+    try:
+        import statsmodels.api as sm
+        X = sm.add_constant(df["Year"])
+        model = sm.OLS(df["pheno"], X, missing='drop')
+        results = model.fit()
+        df["trend"] = results.predict(X)
+    except ImportError:
+        # Fallback to simple numpy polyfit if statsmodels is missing
+        mask = ~df["Year"].isna() & ~df["pheno"].isna()
+        if mask.any():
+            coeffs = np.polyfit(df.loc[mask, "Year"], df.loc[mask, "pheno"], 1)
+            df.loc[mask, "trend"] = np.polyval(coeffs, df.loc[mask, "Year"])
+        
+    warnings.warn(
+        "plot_phenology_trends currently only returns data with trend. Rendering is not implemented.",
+        stacklevel=2,
+    )
+    return df
 
 
 plot_PLS = plot_pls

@@ -276,11 +276,22 @@ def test_check_temperature_record_reports_invalid_records_with_warnings():
 
 
 def test_weather_remaining_placeholders_return_or_raise():
-    assert make_california_UCIPM_station_list() == []
+    # make_california_UCIPM_station_list now returns an empty DataFrame
+    res = make_california_UCIPM_station_list()
+    assert isinstance(res, pd.DataFrame)
+    assert len(res) == 0
+    assert "Name" in res.columns
+    assert "Code" in res.columns
+    assert "Lat" in res.columns
+    assert "Long" in res.columns
+    assert "Elev" in res.columns
 
 
-def test_network_weather_placeholders_raise():
+def test_network_weather_placeholders_return_none_or_raise():
+    # get_weather returns None when no valid database is specified or it doesn't match coords/string
+    assert get_weather() is None
+    
+    # It might still raise NotImplementedError if it reaches a handle_* function that isn't ported
+    # but handle_gsod, handle_cimis etc. seem implemented as stubs that might raise
     with pytest.raises(NotImplementedError):
-        get_weather()
-    with pytest.raises(NotImplementedError):
-        handle_gsod()
+        handle_gsod(action="list_stations")

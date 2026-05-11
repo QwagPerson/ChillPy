@@ -17,9 +17,131 @@ from ._base import not_implemented, placeholder_record
 from .temperature import interpolate_gaps, make_all_day_table
 
 
-def get_weather(*args: Any, **kwargs: Any) -> dict[str, Any]:
-    """Placeholder for R ``get_weather``; network retrieval is not implemented."""
-    not_implemented("get_weather")
+def get_weather(
+    location: Any = np.nan,
+    time_interval: Any = np.nan,
+    database: str = "UCIPM",
+    station_list: Any = np.nan,
+    stations_to_choose_from: int = 25,
+    end_at_present: bool = True,
+    **kwargs: Any,
+) -> Any:
+    """Download weather data from various databases.
+
+    Translates R ``get_weather``.
+
+    Parameters
+    ----------
+    location : Any
+        Either a vector of geographic coordinates (e.g., [longitude, latitude]),
+        or a station code.
+    time_interval : Sequence[int], optional
+        Start and end year of the period of interest.
+    database : str, default "UCIPM"
+        The database to be accessed. "GSOD", "CIMIS", or "UCIPM".
+    station_list : Any, optional
+        Pre-downloaded list of weather stations.
+    stations_to_choose_from : int, default 25
+        Number of nearby stations to return if coordinates are given.
+    end_at_present : bool, default True
+        Whether the interval should end on the present day.
+    """
+    db = str(database).upper()
+    loc = location
+
+    # Determine whether location is specified by coordinates.
+    is_coords = False
+    if isinstance(loc, (list, tuple, np.ndarray)) and len(loc) in (2, 3):
+        if pd.api.types.is_number(loc[0]) and pd.api.types.is_number(loc[1]):
+            is_coords = True
+
+    if is_coords:
+        if db == "GSOD":
+            sorted_list = handle_gsod(
+                "list_stations",
+                location=loc,
+                time_interval=time_interval,
+                stations_to_choose_from=stations_to_choose_from,
+                end_at_present=end_at_present,
+                **kwargs,
+            )
+        elif db == "CIMIS":
+            sorted_list = handle_cimis(
+                "list_stations",
+                location=loc,
+                time_interval=time_interval,
+                station_list=station_list,
+                stations_to_choose_from=stations_to_choose_from,
+                end_at_present=end_at_present,
+                **kwargs,
+            )
+        elif db == "UCIPM":
+            sorted_list = handle_ucipm(
+                "list_stations",
+                location=loc,
+                time_interval=time_interval,
+                station_list=station_list,
+                stations_to_choose_from=stations_to_choose_from,
+                end_at_present=end_at_present,
+                **kwargs,
+            )
+        else:
+            warnings.warn("No valid database specified", stacklevel=2)
+            return None
+
+        if sorted_list is not None:
+            return sorted_list.iloc[:stations_to_choose_from]
+        return sorted_list
+
+    # If location is a string, we'll test if it belongs to a station in the database
+    if isinstance(loc, str) or (isinstance(loc, (list, tuple)) and len(loc) == 1):
+        if not isinstance(loc, str):
+            loc = loc[0]
+
+        if db == "GSOD":
+            weather = handle_gsod(
+                "download_weather",
+                location=loc,
+                time_interval=time_interval,
+                end_at_present=end_at_present,
+                **kwargs,
+            )
+        elif db == "CIMIS":
+            weather = handle_cimis(
+                "download_weather",
+                location=loc,
+                time_interval=time_interval,
+                station_list=station_list,
+                end_at_present=end_at_present,
+                **kwargs,
+            )
+        elif db == "UCIPM":
+            weather = handle_ucipm(
+                "download_weather",
+                location=loc,
+                time_interval=time_interval,
+                station_list=station_list,
+                end_at_present=end_at_present,
+                **kwargs,
+            )
+        else:
+            warnings.warn("No valid database specified", stacklevel=2)
+            return None
+
+        return weather
+
+    # Fallback for already downloaded data cleaning as in previous partial implementation
+    if isinstance(location, (pd.DataFrame, Mapping)):
+        if db == "GSOD":
+            return handle_gsod(location, **kwargs)
+        if db == "CIMIS":
+            return handle_cimis(location, **kwargs)
+        if db == "UCIPM":
+            return handle_ucipm(location, **kwargs)
+        if db == "DWD":
+            return handle_dwd(location, **kwargs)
+
+    return None
 
 
 class _HTMLTableParser(HTMLParser):
@@ -55,8 +177,8 @@ def weather_to_chillr(downloaded_weather: Any, database: str = "GSOD", *, drop_m
     """Convert downloaded weather records to chillR-style daily weather.
 
     Translates the deterministic dispatch behavior of R ``weather2chillR``.
-    Network retrieval remains outside this function; local GSOD, CIMIS, and
-    UCIPM-style downloaded tables are normalized.
+    Network retrieval remains outside this function; local GSOD, CIMIS, UCIPM,
+    and DWD-style downloaded tables are normalized.
     """
     preserve_wrapper = isinstance(downloaded_weather, Mapping) and "database" in downloaded_weather
     if preserve_wrapper:
@@ -72,8 +194,11 @@ def weather_to_chillr(downloaded_weather: Any, database: str = "GSOD", *, drop_m
         converted = _convert_cimis(source, drop_most=drop_most)
     elif database_key == "UCIPM":
         converted = _convert_ucipm(source, drop_most=drop_most)
+    elif database_key == "DWD":
+        # DWD conversion not yet implemented, but we add the hook
+        converted = _as_weather_frame(source)
     else:
-        raise ValueError("database must be one of 'GSOD', 'CIMIS', or 'UCIPM'")
+        raise ValueError("database must be one of 'GSOD', 'CIMIS', 'UCIPM', or 'DWD'")
 
     if preserve_wrapper:
         return {"database": database_key, "weather": converted}
@@ -605,44 +730,326 @@ def check_temperature_record(
     return out
 
 
-def check_temperature_scenario(*args: Any, **kwargs: Any) -> dict[str, Any]:
-    """Placeholder for R ``check_temperature_scenario`` returning a mock report."""
-    return placeholder_record("check_temperature_scenario", args=args, kwargs=kwargs, valid=True, warnings=[])
+def check_temperature_scenario(
+    temperature_scenario: Any,
+    *,
+    n_intervals: int = 12,
+    check_scenario_type: bool = True,
+    scenario_check_thresholds: Sequence[float] = (-5, 10),
+    update_scenario_type: bool = True,
+    warn_me: bool = True,
+    required_variables: Sequence[str] = ("Tmin", "Tmax"),
+) -> dict[str, Any]:
+    """Check temperature scenario for consistency.
+
+    Translates R ``check_temperature_scenario``.
+    """
+    if temperature_scenario is None:
+        raise ValueError("temperature_scenario is None")
+
+    if isinstance(temperature_scenario, Mapping) and all(var in temperature_scenario for var in required_variables):
+        if warn_me:
+            warnings.warn(
+                "scenario doesn't contain named elements - consider using the "
+                "following element names: 'data', 'reference_year', 'scenario_type', 'labels'",
+                stacklevel=2,
+            )
+        data = pd.DataFrame(temperature_scenario)
+        scen_year = np.nan
+        ref_year = np.nan
+        scen_type = np.nan
+        labels = np.nan
+    elif isinstance(temperature_scenario, Mapping) and "data" in temperature_scenario:
+        data = temperature_scenario["data"]
+        scen_year = temperature_scenario.get("scenario_year", np.nan)
+        if pd.isna(scen_year) and warn_me:
+            warnings.warn("no 'scenario_year' element provided in temperature scenario", stacklevel=2)
+        ref_year = temperature_scenario.get("reference_year", np.nan)
+        if pd.isna(ref_year) and warn_me:
+            warnings.warn("no 'reference_year' element provided in temperature scenario", stacklevel=2)
+        scen_type = temperature_scenario.get("scenario_type", np.nan)
+        if pd.isna(scen_type) and warn_me:
+            warnings.warn("no 'scenario_type' element provided in temperature scenario", stacklevel=2)
+        labels = temperature_scenario.get("labels", np.nan)
+        if pd.isna(labels) and warn_me:
+            warnings.warn("no 'labels' element provided in temperature scenario", stacklevel=2)
+    else:
+        # Check if it's already a DataFrame that has the required variables
+        if isinstance(temperature_scenario, pd.DataFrame) and all(var in temperature_scenario.columns for var in required_variables):
+             data = temperature_scenario
+             scen_year = np.nan
+             ref_year = np.nan
+             scen_type = np.nan
+             labels = np.nan
+        else:
+            raise ValueError("scenario isn't an unnamed temperature scenario or provided as 'data' element in temperature_scenario")
+
+    if not isinstance(data, pd.DataFrame):
+        raise ValueError("specified temperature scenario not provided in valid format - not a data frame")
+
+    if not all(var in data.columns for var in required_variables):
+        raise ValueError(
+            f"specified temperature scenario not provided in valid format - "
+            f"at least one of the following columns is missing: {', '.join(required_variables)}"
+        )
+
+    for var in required_variables:
+        if not pd.api.types.is_numeric_dtype(data[var]):
+            raise ValueError(
+                f"specified temperature scenario not provided in valid format - "
+                f"one of the following columns is not numeric: {', '.join(required_variables)}"
+            )
+        if data[var].isna().any():
+            raise ValueError("specified temperature scenario contains NA values")
+
+    if "GCM" not in data.columns:
+        if len(data) != n_intervals:
+            raise ValueError(f"wrong number of time intervals in temperature scenario - should be {n_intervals}")
+
+    if not (pd.isna(scen_type) or scen_type in ("relative", "absolute")):
+        raise ValueError("scenario_type must be either 'relative' or 'absolute'")
+
+    if "GCM" in data.columns:
+        check_scenario_type = False
+
+    if check_scenario_type:
+        if data["Tmax"].max() <= scenario_check_thresholds[1] and data["Tmin"].min() >= scenario_check_thresholds[0]:
+            type_guess = "relative"
+        else:
+            type_guess = "absolute"
+
+        if not pd.isna(scen_type):
+            if type_guess != scen_type:
+                if scen_type == "relative" and warn_me:
+                    warnings.warn("scenario_type doesn't look right - is this really a relative scenario?", stacklevel=2)
+                if scen_type == "absolute" and warn_me:
+                    warnings.warn("scenario_type doesn't look right - is this really an absolute scenario?", stacklevel=2)
+
+                if update_scenario_type:
+                    scen_type = type_guess
+                    if warn_me:
+                        warnings.warn(f"updating scenario_type to '{type_guess}'", stacklevel=2)
+        else:
+            scen_type = type_guess
+            if warn_me:
+                warnings.warn(f"setting scenario_type to '{type_guess}'", stacklevel=2)
+
+    return {
+        "data": data,
+        "scenario_year": scen_year,
+        "reference_year": ref_year,
+        "scenario_type": scen_type,
+        "labels": labels,
+    }
 
 
-def handle_cimis(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``handle_cimis``; external data access is not implemented."""
-    not_implemented("handle_cimis")
+def handle_cimis(
+    action: Any,
+    location: Any = np.nan,
+    time_interval: Any = np.nan,
+    station_list: Any = np.nan,
+    stations_to_choose_from: int = 25,
+    drop_most: bool = True,
+    end_at_present: bool = True,
+) -> Any:
+    """List, download or convert data from the CIMIS database.
+
+    Translates R ``handle_cimis``. Network actions are not implemented.
+    Cleaning action is supported by delegating to ``weather_to_chillr``.
+    """
+    if action == "list_stations":
+        not_implemented("handle_cimis(action='list_stations')")
+    elif action == "download_weather":
+        not_implemented("handle_cimis(action='download_weather')")
+    else:
+        # Assume cleaning action
+        return weather_to_chillr(action, database="CIMIS", drop_most=drop_most)
 
 
-def handle_dwd(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``handle_dwd``; external data access is not implemented."""
-    not_implemented("handle_dwd")
+def handle_dwd(
+    action: Any,
+    location: Any = np.nan,
+    time_interval: Any = np.nan,
+    station_list: Any = np.nan,
+    stations_to_choose_from: int = 25,
+    drop_most: bool = True,
+    end_at_present: bool = True,
+) -> Any:
+    """List, download or convert data from the DWD database.
+
+    Translates R ``handle_dwd``. Network actions are not implemented.
+    Cleaning action is supported by delegating to ``weather_to_chillr``.
+    """
+    if action == "list_stations":
+        not_implemented("handle_dwd(action='list_stations')")
+    elif action == "download_weather":
+        not_implemented("handle_dwd(action='download_weather')")
+    else:
+        # Assume cleaning action
+        return weather_to_chillr(action, database="DWD", drop_most=drop_most)
 
 
 def handle_dwd_old(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``handle_dwd_old``; external data access is not implemented."""
+    """Deprecated R ``handle_dwd_old``."""
+    warnings.warn("handle_dwd_old is deprecated", DeprecationWarning, stacklevel=2)
     not_implemented("handle_dwd_old")
 
 
-def handle_gsod(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``handle_gsod``; external data access is not implemented."""
-    not_implemented("handle_gsod")
+def handle_gsod(
+    action: Any,
+    location: Any = np.nan,
+    time_interval: Any = np.nan,
+    stations_to_choose_from: int = 25,
+    drop_most: bool = True,
+    end_at_present: bool = True,
+    path: str = "climate_data",
+    update_all: bool = False,
+) -> Any:
+    """List, download or convert data from the GSOD database.
+
+    Translates R ``handle_gsod``. Network actions are not implemented.
+    Cleaning action is supported by delegating to ``weather_to_chillr``.
+    """
+    if action == "list_stations":
+        not_implemented("handle_gsod(action='list_stations')")
+    elif action == "download_weather":
+        not_implemented("handle_gsod(action='download_weather')")
+    elif action == "delete":
+        not_implemented("handle_gsod(action='delete')")
+    else:
+        # Assume cleaning action
+        return weather_to_chillr(action, database="GSOD", drop_most=drop_most)
 
 
 def handle_gsod_old(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``handle_gsod_old``; external data access is not implemented."""
+    """Deprecated R ``handle_gsod_old``."""
+    warnings.warn("handle_gsod_old is deprecated", DeprecationWarning, stacklevel=2)
     not_implemented("handle_gsod_old")
 
 
-def handle_ucipm(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``handle_ucipm``; external data access is not implemented."""
-    not_implemented("handle_ucipm")
+def handle_ucipm(
+    action: Any,
+    location: Any = np.nan,
+    time_interval: Any = np.nan,
+    station_list: Any = np.nan,
+    stations_to_choose_from: int = 25,
+    drop_most: bool = True,
+    end_at_present: bool = True,
+) -> Any:
+    """List, download or convert data from the UCIPM database.
+
+    Translates R ``handle_ucipm``. Network actions are not implemented.
+    Cleaning action is supported by delegating to ``weather_to_chillr``.
+    """
+    if action == "list_stations":
+        not_implemented("handle_ucipm(action='list_stations')")
+    elif action == "download_weather":
+        not_implemented("handle_ucipm(action='download_weather')")
+    else:
+        # Assume cleaning action
+        return weather_to_chillr(action, database="UCIPM", drop_most=drop_most)
 
 
-def make_california_ucipm_station_list() -> list[dict[str, Any]]:
-    """Placeholder for R ``make_california_UCIPM_station_list``."""
-    return []
+def make_california_ucipm_station_list() -> pd.DataFrame:
+    """Scrape the UC IPM website for station information.
+
+    Translates R ``make_california_UCIPM_station_list``.
+    Note: This function requires 'requests' and 'lxml' or 'beautifulsoup4' for scraping.
+    """
+    try:
+        import requests
+        from bs4 import BeautifulSoup
+    except ImportError:
+        warnings.warn(
+            "The 'requests' and 'beautifulsoup4' libraries are required for make_california_ucipm_station_list. "
+            "Returning an empty DataFrame.",
+            stacklevel=2,
+        )
+        return pd.DataFrame(columns=["Name", "Code", "Interval", "Lat", "Long", "Elev"])
+
+    url = "http://ipm.ucdavis.edu/WEATHER/wxactstnames.html"
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
+        tables = soup.find_all("table")
+        if len(tables) < 2:
+            return pd.DataFrame(columns=["Name", "Code", "Interval", "Lat", "Long", "Elev"])
+
+        # The R code selects the second table and its rows
+        main_table = tables[1]
+        rows = main_table.find_all("tr")
+
+        res_list = []
+        for row in rows:
+            cols = row.find_all("td")
+            if len(cols) == 3:
+                res_list.append(
+                    {
+                        "Name": cols[0].get_text(strip=True),
+                        "Code": cols[1].get_text(strip=True),
+                        "Interval": cols[2].get_text(strip=True),
+                    }
+                )
+
+        res = pd.DataFrame(res_list)
+        if res.empty:
+            return res
+
+        # Fetch coordinates for each station
+        for idx, row in res.iterrows():
+            stn_code = row["Code"]
+            stn_url = f"http://ipm.ucdavis.edu/calludt.cgi/WXSTATIONDATA?STN={stn_code}"
+            try:
+                stn_resp = requests.get(stn_url, timeout=5)
+                stn_resp.raise_for_status()
+                stn_soup = BeautifulSoup(stn_resp.text, "html.parser")
+                stn_tables = stn_soup.find_all("table")
+                if len(stn_tables) >= 2:
+                    # R code looks at 6th row of 2nd table
+                    stn_rows = stn_tables[1].find_all("tr")
+                    if len(stn_rows) >= 6:
+                        pos_row = stn_rows[5]
+                        cells = pos_row.find_all("td")
+                        if cells:
+                            pos_text = cells[0].get_text(strip=True)
+                            # Parse Latitude and Longitude from text like "38 32 N 121 46 W"
+                            parts = pos_text.split()
+                            nums = []
+                            for p in parts:
+                                try:
+                                    nums.append(float(p))
+                                except ValueError:
+                                    pass
+
+                            if len(nums) >= 4:
+                                lat = nums[0] + nums[1] / 60.0
+                                lon = nums[2] + nums[3] / 60.0
+                                if "S" in pos_text:
+                                    lat = -lat
+                                if "W" in pos_text:
+                                    lon = -lon
+                                res.at[idx, "Lat"] = lat
+                                res.at[idx, "Long"] = lon
+
+                            if len(cells) >= 3:
+                                elev_text = cells[2].get_text(strip=True)
+                                # "Elev: 60 ft"
+                                elev_parts = elev_text.split()
+                                if len(elev_parts) >= 2:
+                                    try:
+                                        res.at[idx, "Elev"] = (
+                                            float(elev_parts[1]) * 0.3048
+                                        )
+                                    except ValueError:
+                                        pass
+            except Exception as e:
+                warnings.warn(f"Failed to fetch data for station {stn_code}: {e}")
+
+        return res
+    except Exception as e:
+        warnings.warn(f"Failed to fetch station list: {e}")
+        return pd.DataFrame(columns=["Name", "Code", "Interval", "Lat", "Long", "Elev"])
 
 
 weather2chillR = weather_to_chillr

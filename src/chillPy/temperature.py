@@ -396,39 +396,69 @@ def temp_response_daily_list(
     whole_record: bool = False,
     empirical: Any = None,
     mean_out: bool = False,
-) -> list[pd.DataFrame | pd.Series]:
+) -> list[pd.DataFrame | pd.Series] | dict[str, pd.DataFrame | pd.Series]:
     """Apply :func:`temp_response` to one or more daily temperature records.
 
-    Translates the idealized-temperature path of R ``tempResponse_daily_list``.
-    The empirical hourly-temperature branch remains unavailable until
-    ``Empirical_hourly_temperatures`` is ported.
+    Translates R ``tempResponse_daily_list``. Daily records are converted to
+    hourly using either idealized curves (default) or empirical coefficients
+    if provided via `empirical`.
+
+    Parameters
+    ----------
+    temperature_list : Any
+        One or more daily temperature records (DataFrame, list of DataFrames,
+        or dict of DataFrames).
+    latitude : float
+        Latitude for idealized hourly temperature generation.
+    start_jday : int, optional
+        Start day of the period.
+    end_jday : int, optional
+        End day of the period.
+    models : dict, optional
+        Models to apply.
+    misstolerance : float, optional
+        Missing value tolerance (percentage).
+    whole_record : bool, optional
+        Whether to sum over the entire record.
+    empirical : Any, optional
+        Empirical coefficients from ``empirical_daily_temperature_curve``.
+    mean_out : bool, optional
+        Whether to include input mean in output.
+
+    Returns
+    -------
+    list or dict
+        List or dictionary of DataFrames showing model totals for each season.
     """
-    if empirical is not None:
-        raise NotImplementedError(
-            "empirical hourly-temperature generation has not been ported yet"
-        )
-
     if isinstance(temperature_list, pd.DataFrame):
-        records: Sequence[Any] = [temperature_list]
+        records: Mapping[str, Any] = {"record_1": temperature_list}
+        return_list = True
     elif isinstance(temperature_list, Mapping):
-        records = list(temperature_list.values())
+        records = temperature_list
+        return_list = False
     else:
-        records = list(temperature_list)
+        records = {f"record_{i + 1}": rec for i, rec in enumerate(temperature_list)}
+        return_list = True
 
-    output: list[pd.DataFrame | pd.Series] = []
-    for record in records:
-        hourtemps = stack_hourly_temps(record, latitude=latitude)
-        output.append(
-            temp_response(
-                hourtemps,
-                start_jday=start_jday,
-                end_jday=end_jday,
-                models=models,
-                misstolerance=misstolerance,
-                whole_record=whole_record,
-                mean_out=mean_out,
-            )
+    output: dict[str, pd.DataFrame | pd.Series] = {}
+    for name, record in records.items():
+        if empirical is None:
+            hourtemps = stack_hourly_temps(record, latitude=latitude)
+        else:
+            hourtemps = empirical_hourly_temperatures(record, empirical)
+
+        output[name] = temp_response(
+            hourtemps,
+            start_jday=start_jday,
+            end_jday=end_jday,
+            models=models,
+            misstolerance=misstolerance,
+            whole_record=whole_record,
+            mean_out=mean_out,
         )
+
+    if return_list:
+        return list(output.values())
     return output
 
 
@@ -629,14 +659,125 @@ def stack_hourly_temps(
     return {"hourtemps": long[preserve_columns + ["Hour", "Temp"]], "QC": qc}
 
 
-def empirical_daily_temperature_curve(thourly: Any) -> dict[str, Any]:
-    """Placeholder for R ``Empirical_daily_temperature_curve``."""
-    return placeholder_record("Empirical_daily_temperature_curve", source=thourly, coefficients=[])
+def empirical_daily_temperature_curve(thourly: Any) -> pd.DataFrame:
+    """Derive an empirical daily temperature curve from observed hourly data.
+
+    The mean temperature during each hour of the day is expressed as a fraction
+    of the daily temperature range (Tmax - Tmin), separately for each month.
+    Translates R ``Empirical_daily_temperature_curve``.
+
+    Parameters
+    ----------
+    thourly : Any
+        Hourly temperatures as a DataFrame or table-like. Must contain
+        'Year', 'Month', 'Day', 'Hour', and 'Temp'.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with 'Month', 'Hour', and 'Prediction_coefficient'.
+    """
+    frame, _ = _prepare_hourtemps(thourly, name="thourly")
+    if "Month" not in frame.columns:
+        # _prepare_hourtemps ensures Year, JDay, Hour, Temp.
+        # If Month is missing, we need to derive it from JDay if possible.
+        # But R version explicitly requires Month column.
+        _require_columns(frame, ["Month"], name="thourly")
+
+    # Summarize sub-hourly data if present
+    thours = frame.groupby(["Year", "Month", "Day", "Hour"])["Temp"].mean().reset_index()
+
+    # Daily extremes
+    tday = thours.groupby(["Year", "Month", "Day"])["Temp"].agg(Tmin="min", Tmax="max").reset_index()
+
+    # Merge hourly and daily
+    merged = pd.merge(thours, tday, on=["Year", "Month", "Day"])
+
+    # Scale temperatures by daily range
+    # Tscaled = (Temp - Tmin) / (Tmax - Tmin)
+    # Avoid division by zero
+    range_val = merged["Tmax"] - merged["Tmin"]
+    merged["Tscaled"] = np.where(range_val != 0, (merged["Temp"] - merged["Tmin"]) / range_val, np.nan)
+
+    # Average scaled values by Month and Hour
+    scaled_summ = merged.groupby(["Month", "Hour"], as_index=False)["Tscaled"].mean()
+
+    # Final adjustment per month
+    def adjust_month(group: pd.DataFrame) -> pd.DataFrame:
+        tmin = group["Tscaled"].min()
+        res = group.copy()
+        res["Tscale_adj"] = res["Tscaled"] - tmin
+        tmax = res["Tscale_adj"].max()
+        if tmax != 0:
+            res["Tscale_adj"] /= tmax
+        return res
+
+    scaled_summ = scaled_summ.groupby("Month", group_keys=True).apply(adjust_month).reset_index()
+    if "level_0" in scaled_summ.columns: # Sometimes reset_index adds this if it was already indexed
+         scaled_summ = scaled_summ.drop(columns=["level_0"], errors="ignore")
+    if "level_1" in scaled_summ.columns:
+         scaled_summ = scaled_summ.drop(columns=["level_1"], errors="ignore")
+
+    # Return as in R: Month, Hour, Prediction_coefficient
+    out = scaled_summ[["Month", "Hour", "Tscale_adj"]].copy()
+    out.columns = ["Month", "Hour", "Prediction_coefficient"]
+    return out
 
 
-def empirical_hourly_temperatures(tdaily: Any, empi_coeffs: Any) -> dict[str, Any]:
-    """Placeholder for R ``Empirical_hourly_temperatures``."""
-    return placeholder_record("Empirical_hourly_temperatures", daily=tdaily, coefficients=empi_coeffs, hourtemps=[])
+def empirical_hourly_temperatures(tdaily: Any, empi_coeffs: Any) -> pd.DataFrame:
+    """Generate hourly temperatures from daily extremes using empirical coefficients.
+
+    Translates R ``Empirical_hourly_temperatures``.
+
+    Parameters
+    ----------
+    tdaily : Any
+        Daily temperatures as a DataFrame or table-like. Must contain
+        'Year', 'Month', 'Day', 'Tmin', and 'Tmax'.
+    empi_coeffs : Any
+        Coefficients from ``empirical_daily_temperature_curve``.
+
+    Returns
+    -------
+    pd.DataFrame
+        Hourly temperatures including all columns from `tdaily`.
+    """
+    daily = _as_dataframe(tdaily, name="tdaily")
+    _require_columns(daily, ["Year", "Month", "Day", "Tmin", "Tmax"], name="tdaily")
+
+    coeffs = _as_dataframe(empi_coeffs, name="empi_coeffs")
+    _require_columns(coeffs, ["Month", "Hour", "Prediction_coefficient"], name="empi_coeffs")
+
+    # R uses stack_hourly_temps(tdaily, latitude=0)$hourtemps to get a template
+    # latitude=0 is used in R source to get 24 hours per day regardless of actual latitude
+    # because it just wants the structure.
+    template = stack_hourly_temps(daily, latitude=0)["hourtemps"]
+
+    # R: frame[,"YEARMODAHO"]<-frame$Year*1000000+frame$Month*10000+frame$Day*100+frame$Hour
+    # merged<-merge(frame,empi_coeffs[,c("MonthHour","Prediction_coefficient")],by="MonthHour")
+    # merged<-merged[order(merged$YEARMODAHO),]
+
+    # Merge on Month and Hour
+    merged = pd.merge(template, coeffs, on=["Month", "Hour"])
+
+    # Calculate empirical temperature
+    merged["Temp_empirical"] = merged["Tmin"] + (merged["Tmax"] - merged["Tmin"]) * merged["Prediction_coefficient"]
+
+    # Rename Temp (which is idealized) to Temp_idealized and Temp_empirical to Temp
+    merged = merged.rename(columns={"Temp": "Temp_idealized", "Temp_empirical": "Temp"})
+
+    # Clean up and sort
+    sort_cols = ["Year", "Month", "Day", "Hour"]
+    merged = merged.sort_values(sort_cols).reset_index(drop=True)
+
+    # R excludes MonthHour, YEARMODAHO, Temp_idealized, Temp_empirical, Prediction_coefficient
+    # we just need to return the expected columns.
+    # template had all daily columns + Hour + Temp
+    daily_cols = [c for c in daily.columns if c not in ["Hour", "Temp"]]
+    out_cols = daily_cols + ["Hour", "Temp"]
+    out = merged[out_cols].copy()
+    out = _add_jday_if_missing(out)
+    return out
 
 
 def interpolate_gaps(x: Any) -> dict[str, np.ndarray]:

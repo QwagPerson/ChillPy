@@ -9,12 +9,10 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from ._base import not_implemented, placeholder_record
 from .date_utils import get_last_date, make_jday
 from .temperature import interpolate_gaps, temp_response, temp_response_hourtable
-from .temperature_models import dynamic_model, gdh, gdh_model
+from .temperature_models import dynamic_model, gdh, gdh_model, phenoflex
 from .utils import runn_mean as runn_mean_func
-
 
 _MONTH_END_JDAYS = np.array([31, 59, 89, 120, 151, 181, 212, 243, 274, 304, 335, 365])
 
@@ -1388,9 +1386,70 @@ def phenology_fitter(
     return res
 
 
-def bootstrap_phenology_fit(*args: Any, **kwargs: Any) -> None:
-    """Placeholder for R ``bootstrap.phenologyFit``; bootstrap logic is not implemented."""
-    not_implemented("bootstrap_phenology_fit")
+def bootstrap_phenology_fit(
+    object_: Any,
+    boot_r: int = 99,
+    control: Mapping[str, Any] | None = None,
+    lower: Any = None,
+    upper: Any = None,
+    seed: int = 1766588,
+) -> dict[str, Any]:
+    """Bootstrap a ``phenologyFit`` object.
+
+    Translates R ``bootstrap.phenologyFit``.
+    Internally calls ``phenology_fitter`` on each bootstrap replicate.
+    """
+    if object_ is None:
+        raise ValueError("object must be provided")
+    if boot_r <= 1:
+        raise ValueError("boot_r must be greater than 1")
+
+    if lower is None:
+        lower = object_.get("lower")
+    if upper is None:
+        upper = object_.get("upper")
+
+    bloom_jdays = np.asarray(object_["bloomJDays"], dtype=float)
+    pbloom_jdays = np.asarray(object_["pbloomJDays"], dtype=float)
+    residuals = bloom_jdays - pbloom_jdays
+
+    if np.all(residuals == 0):
+        raise ValueError("All residuals equal to zero, no variation. Aborting")
+
+    boot_res: dict[str, Any] = {
+        "res": [],
+        "boot_R": boot_r,
+        "object": object_,
+        "seed": seed,
+        "lower": lower,
+        "upper": upper,
+        "object_type": "bootstrap_phenologyFit",
+    }
+
+    rng = np.random.default_rng(seed)
+
+    for _ in range(boot_r):
+        resampled_bloom = pbloom_jdays + rng.choice(residuals, size=len(residuals), replace=True)
+        tmp = phenology_fitter(
+            par_guess=object_["par"],
+            modelfn=object_["modelfn"],
+            bloom_jdays=resampled_bloom,
+            season_list=object_["SeasonList"],
+            control=control,
+            lower=lower,
+            upper=upper,
+            seed=seed,
+        )
+        boot_res["res"].append(
+            {
+                "par": tmp["par"],
+                "value": tmp["model_fit"]["value"] if tmp["model_fit"] else np.nan,
+                "bloomJDays": resampled_bloom,
+                "pbloomJDays": tmp["pbloomJDays"],
+            }
+        )
+
+    return boot_res
 
 
 def gen_season(temps: Any, mrange: tuple[int, int] = (8, 6), years: Any = None) -> list[np.ndarray]:
@@ -1602,24 +1661,195 @@ def uni_force_wrapper(x: Any, par: Any) -> float:
     return _jday_from_r_relative_crossing(jdays, cumulative, params[2])
 
 
-def phenoflex_gdh_wrapper(x: Any, par: Any) -> dict[str, Any]:
-    """Placeholder for R ``PhenoFlex_GDHwrapper``."""
-    return placeholder_record("PhenoFlex_GDHwrapper", x=x, par=par, predictions=[])
+def _phenoflex_smooth(jdays: np.ndarray, bloom_index: int) -> float:
+    """Apply the smoothing logic from R PhenoFlex wrappers."""
+    if bloom_index == 0:
+        return np.nan
+    # bloom_index is 1-based index from C++ (i+2)
+    # in Python it corresponds to index bloom_index - 1
+    idx = bloom_index - 1
+    if idx >= len(jdays):
+        return np.nan
+
+    jday_val = jdays[idx]
+    jday_list = np.flatnonzero(jdays == jday_val)
+    n = len(jday_list)
+    if n == 1:
+        return float(jday_val)
+
+    # which(JDaylist == bloomindex)
+    pos = np.flatnonzero(jday_list == idx)[0] + 1
+    return float(jday_val + pos / n - 1.0 / (n / np.ceil(n / 2.0)))
 
 
-def phenoflex_fixed_dynamic_model_wrapper(x: Any, par: Any, *args: Any, **kwargs: Any) -> dict[str, Any]:
-    """Placeholder for R ``PhenoFlex_fixedDynModelwrapper``."""
-    return placeholder_record("PhenoFlex_fixedDynModelwrapper", x=x, par=par, args=args, kwargs=kwargs, predictions=[])
+def phenoflex_gdh_wrapper(x: Any, par: Any) -> float:
+    """Evaluate R ``PhenoFlex_GDHwrapper`` for one season.
+
+    ``par`` has length 12: yc, zc, s1, Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope.
+    """
+    frame = _as_dataframe(x, name="x")
+    _require_columns(frame, ["Temp", "JDay"], name="x")
+    temps = frame["Temp"].values
+    jdays = frame["JDay"].values
+    params = _coerce_parameter_vector(par, name="par")
+
+    if len(params) < 12:
+        raise ValueError("par must have length 12 for PhenoFlex_GDHwrapper")
+
+    # par[4] <= par[11] (Tu <= Tb)
+    if params[3] <= params[10]:
+        return np.nan
+    # par[10] <= par[4] (Tc <= Tu)
+    if params[9] <= params[3]:
+        return np.nan
+
+    res = phenoflex(
+        temp=temps,
+        times=np.arange(1, len(temps) + 1),
+        yc=params[0],
+        zc=params[1],
+        s1=params[2],
+        tu=params[3],
+        e0=params[4],
+        e1=params[5],
+        a0=params[6],
+        a1=params[7],
+        tf=params[8],
+        tc=params[9],
+        tb=params[10],
+        slope=params[11],
+        imodel=0,
+        basic_output=False,
+    )
+    return _phenoflex_smooth(jdays, res["bloomindex"])
 
 
-def phenoflex_gauss_wrapper(x: Any, par: Any) -> dict[str, Any]:
-    """Placeholder for R ``PhenoFlex_GAUSSwrapper``."""
-    return placeholder_record("PhenoFlex_GAUSSwrapper", x=x, par=par, predictions=[])
+def phenoflex_fixed_dynamic_model_wrapper(
+    x: Any,
+    par: Any,
+    a0: float = 139500,
+    a1: float = 2567000000000000000,
+    e0: float = 4153.5,
+    e1: float = 12888.8,
+    slope: float = 1.6,
+    tf: float = 4,
+) -> float:
+    """Evaluate R ``PhenoFlex_fixedDynModelwrapper`` for one season.
+
+    ``par`` has length 6: yc, zc, s1, Tu, Tc, Tb.
+    """
+    frame = _as_dataframe(x, name="x")
+    _require_columns(frame, ["Temp", "JDay"], name="x")
+    temps = frame["Temp"].values
+    jdays = frame["JDay"].values
+    params = _coerce_parameter_vector(par, name="par")
+
+    if len(params) < 6:
+        raise ValueError("par must have length 6 for PhenoFlex_fixedDynModelwrapper")
+
+    # par[4] <= par[6] (Tu <= Tb)
+    if params[3] <= params[5]:
+        return np.nan
+    # par[5] <= par[4] (Tc <= Tu)
+    if params[4] <= params[3]:
+        return np.nan
+
+    res = phenoflex(
+        temp=temps,
+        times=np.arange(1, len(temps) + 1),
+        yc=params[0],
+        zc=params[1],
+        s1=params[2],
+        tu=params[3],
+        tc=params[4],
+        tb=params[5],
+        e0=e0,
+        e1=e1,
+        a0=a0,
+        a1=a1,
+        tf=tf,
+        slope=slope,
+        imodel=0,
+        basic_output=False,
+    )
+    return _phenoflex_smooth(jdays, res["bloomindex"])
 
 
-def phenoflex_fixed_dynamic_model_gauss_wrapper(x: Any, par: Any, *args: Any, **kwargs: Any) -> dict[str, Any]:
-    """Placeholder for R ``PhenoFlex_fixedDynModelGAUSSwrapper``."""
-    return placeholder_record("PhenoFlex_fixedDynModelGAUSSwrapper", x=x, par=par, args=args, kwargs=kwargs, predictions=[])
+def phenoflex_gauss_wrapper(x: Any, par: Any) -> float:
+    """Evaluate R ``PhenoFlex_GAUSSwrapper`` for one season.
+
+    ``par`` has length 11: yc, zc, s1, Tu, E0, E1, A0, A1, Tf, Delta, slope.
+    """
+    frame = _as_dataframe(x, name="x")
+    _require_columns(frame, ["Temp", "JDay"], name="x")
+    temps = frame["Temp"].values
+    jdays = frame["JDay"].values
+    params = _coerce_parameter_vector(par, name="par")
+
+    if len(params) < 11:
+        raise ValueError("par must have length 11 for PhenoFlex_GAUSSwrapper")
+
+    res = phenoflex(
+        temp=temps,
+        times=np.arange(1, len(temps) + 1),
+        yc=params[0],
+        zc=params[1],
+        s1=params[2],
+        tu=params[3],
+        e0=params[4],
+        e1=params[5],
+        a0=params[6],
+        a1=params[7],
+        tf=params[8],
+        delta=params[9],
+        slope=params[10],
+        imodel=1,
+        basic_output=False,
+    )
+    return _phenoflex_smooth(jdays, res["bloomindex"])
+
+
+def phenoflex_fixed_dynamic_model_gauss_wrapper(
+    x: Any,
+    par: Any,
+    a0: float = 139500,
+    a1: float = 2567000000000000000,
+    e0: float = 4153.5,
+    e1: float = 12888.8,
+    slope: float = 1.6,
+    tf: float = 4,
+) -> float:
+    """Evaluate R ``PhenoFlex_fixedDynModelGAUSSwrapper`` for one season.
+
+    ``par`` has length 5: yc, zc, s1, Tu, Delta.
+    """
+    frame = _as_dataframe(x, name="x")
+    _require_columns(frame, ["Temp", "JDay"], name="x")
+    temps = frame["Temp"].values
+    jdays = frame["JDay"].values
+    params = _coerce_parameter_vector(par, name="par")
+
+    if len(params) < 5:
+        raise ValueError("par must have length 5 for PhenoFlex_fixedDynModelGAUSSwrapper")
+
+    res = phenoflex(
+        temp=temps,
+        times=np.arange(1, len(temps) + 1),
+        yc=params[0],
+        zc=params[1],
+        s1=params[2],
+        tu=params[3],
+        delta=params[4],
+        e0=e0,
+        e1=e1,
+        a0=a0,
+        a1=a1,
+        tf=tf,
+        slope=slope,
+        imodel=1,
+        basic_output=False,
+    )
+    return _phenoflex_smooth(jdays, res["bloomindex"])
 
 
 PLS_chill_force = pls_chill_force
@@ -1637,3 +1867,5 @@ PhenoFlex_GDHwrapper = phenoflex_gdh_wrapper
 PhenoFlex_fixedDynModelwrapper = phenoflex_fixed_dynamic_model_wrapper
 PhenoFlex_GAUSSwrapper = phenoflex_gauss_wrapper
 PhenoFlex_fixedDynModelGAUSSwrapper = phenoflex_fixed_dynamic_model_gauss_wrapper
+bootstrap_phenology_fit = bootstrap_phenology_fit
+globals()["bootstrap.phenologyFit"] = bootstrap_phenology_fit

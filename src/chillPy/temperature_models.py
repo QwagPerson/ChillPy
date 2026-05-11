@@ -244,19 +244,132 @@ def phenoflex(
     temp: Any,
     times: Any,
     *,
+    a0: float = 6319.5,
+    a1: float = 5.939917e13,
+    e0: float = 3372.8,
+    e1: float = 9900.3,
+    slope: float = 1.6,
+    tf: float = 4,
+    s1: float = 0.5,
+    tu: float = 25,
+    tb: float = 4,
+    tc: float = 36,
+    yc: float = 40,
+    delta: float = 4,
+    imodel: int = 0,
+    zc: float = 190,
+    stop_at_zc: bool = True,
+    deg_celsius: bool = True,
     basic_output: bool = True,
-    **parameters: Any,
-) -> dict[str, Any] | np.ndarray:
-    """Placeholder for R/Rcpp ``PhenoFlex``.
+    **kwargs: Any,
+) -> dict[str, Any]:
+    """Combined model of the dynamic model for chill accumulation and the GDH model.
 
-    Returns a small result dictionary by default; set ``basic_output=False`` to
-    receive a mock NumPy array shaped like ``temp``.
+    Translates R PhenoFlex (C++ implementation).
+
+    Args:
+        temp: Hourly temperatures.
+        times: Time steps (e.g., hours).
+        a0, a1, e0, e1: Dynamic model parameters.
+        slope: Slope parameter for sigmoidal function.
+        tf: Transition temperature for sigmoidal function.
+        s1: Slope of transition from chill to heat accumulation.
+        tu: GDH optimal temperature or GAUSS mean.
+        tb: GDH base temperature.
+        tc: GDH upper temperature.
+        yc: Critical value defining end of chill accumulation.
+        delta: Width of Gaussian heat accumulation model.
+        imodel: Heat model: 0 for GDH, 1 for Gaussian.
+        zc: Critical value for end of heat accumulation.
+        stop_at_zc: Whether to stop once zc is reached.
+        deg_celsius: Whether temperatures are in Celsius.
+        basic_output: If True, returns only bloomindex.
+
+    Returns:
+        A dictionary with 'bloomindex' and optionally 'x', 'y', 'z', 'xs'.
     """
-    del times, parameters
-    values = placeholder_array(temp, cumulative=True)
-    if not basic_output:
-        return values
-    return {"object_type": "PhenoFlex", "values": values}
+    temp = ensure_1d(temp)
+    times = ensure_1d(times)
+    n = len(temp)
+
+    x = np.zeros(n)
+    y = np.zeros(n)
+    z = np.zeros(n)
+    xs = np.zeros(n)
+
+    _tf = tf
+    _tu = tu
+    _tc = tc
+    _tb = tb
+
+    if deg_celsius:
+        _tf += 273.0
+        _tu += 273.0
+        _tc += 273.0
+        _tb += 273.0
+
+    bloom_index = 0
+
+    pi = np.pi
+
+    def p1z(t: float, tu_val: float, tb_val: float, tc_val: float) -> float:
+        if tb_val <= t <= tu_val:
+            return 0.5 * (1 + np.cos(pi + pi * (t - tb_val) / (tu_val - tb_val)))
+        elif tu_val < t <= tc_val:
+            return 1 + np.cos(pi / 2.0 + pi / 2.0 * (t - tu_val) / (tc_val - tu_val))
+        return 0.0
+
+    def p2z(t: float, tu_val: float, delta_val: float) -> float:
+        return np.exp(-((t - tu_val) / 2.0 / delta_val) ** 2)
+
+    def p_fcn(t_val: float, tf_val: float, slope_val: float) -> float:
+        if t_val == 0:
+            return 0.0
+        val = slope_val * tf_val * (t_val - tf_val) / t_val
+        if val >= 17:
+            return 1.0
+        elif val <= -20:
+            return 0.0
+        sr = np.exp(val)
+        return sr / (1 + sr)
+
+    for i in range(n - 1):
+        ti = temp[i]
+        if deg_celsius:
+            ti += 273.0
+
+        xs[i] = a0 / a1 * np.exp(-(e0 - e1) / ti)
+        k1 = a1 * np.exp(-e1 / ti)
+        x[i + 1] = xs[i] - (xs[i] - x[i]) * np.exp(-k1 * (times[i + 1] - times[i]))
+        y[i + 1] = y[i]
+
+        heat_inc = 0.0
+        if imodel == 0:
+            heat_inc = p1z(ti, _tu, _tb, _tc)
+        else:
+            heat_inc = p2z(ti, _tu, delta)
+
+        z[i + 1] = z[i] + heat_inc * p_fcn(y[i], yc, s1) * (times[i + 1] - times[i])
+
+        if x[i + 1] >= 1.0:
+            delta_y = p_fcn(ti, _tf, slope) * x[i + 1]
+            y[i + 1] += delta_y
+            x[i + 1] -= delta_y
+
+        if z[i + 1] >= zc:
+            bloom_index = i + 2
+            if stop_at_zc:
+                break
+
+    if basic_output:
+        return {"bloomindex": bloom_index, "values": y + z}
+    return {
+        "x": x,
+        "y": y,
+        "z": z,
+        "xs": xs,
+        "bloomindex": bloom_index,
+    }
 
 
 Utah_Model = utah_model

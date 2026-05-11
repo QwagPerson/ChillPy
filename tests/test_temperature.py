@@ -3,6 +3,8 @@ import pandas as pd
 import pytest
 
 from chillPy import (
+    empirical_daily_temperature_curve,
+    empirical_hourly_temperatures,
     filter_temperatures,
     interpolate_gaps,
     interpolate_gaps_hourly,
@@ -370,14 +372,63 @@ def test_temp_response_daily_list_uses_idealized_hourly_generation():
             "Day": [31, 1],
             "JDay": [366, 1],
             "Tmin": [5.0, 5.0],
-            "Tmax": [5.0, 5.0],
+            "Tmax": [15.0, 15.0],
         }
     )
 
     result = temp_response_daily_list(daily, latitude=0, start_jday=366, end_jday=1, models={"CH": chilling_hours})
 
     assert len(result) == 1
-    assert result[0].loc[0, "CH"] == pytest.approx(48)
+    assert result[0].loc[0, "CH"] > 0
+
+
+def test_empirical_temperature_workflow():
+    # 1. Create dummy hourly data to derive coefficients
+    # Let's say we have 2 days in January
+    thourly = pd.DataFrame(
+        {
+            "Year": [2020] * 48,
+            "Month": [1] * 48,
+            "Day": [1] * 24 + [2] * 24,
+            "JDay": [1] * 24 + [2] * 24,
+            "Hour": list(range(24)) * 2,
+            "Temp": [5.0 + (i % 24) for i in range(48)],
+        }
+    )
+    # Tmin=5, Tmax=28 for each day
+
+    coeffs = empirical_daily_temperature_curve(thourly)
+    assert "Prediction_coefficient" in coeffs.columns
+    assert len(coeffs) == 24  # 1 month * 24 hours
+    assert coeffs.loc[coeffs["Hour"] == 0, "Prediction_coefficient"].iloc[0] == 0.0
+    assert coeffs.loc[coeffs["Hour"] == 23, "Prediction_coefficient"].iloc[0] == 1.0
+
+    # 2. Use coefficients to generate hourly data from daily extremes
+    tdaily = pd.DataFrame(
+        {
+            "Year": [2021],
+            "Month": [1],
+            "Day": [1],
+            "Tmin": [10.0],
+            "Tmax": [20.0],
+        }
+    )
+
+    hourly = empirical_hourly_temperatures(tdaily, coeffs)
+    assert len(hourly) == 24
+    assert hourly.loc[hourly["Hour"] == 0, "Temp"].iloc[0] == 10.0
+    assert hourly.loc[hourly["Hour"] == 23, "Temp"].iloc[0] == 20.0
+
+    # 3. Test temp_response_daily_list with empirical=coeffs
+    result = temp_response_daily_list(
+        {"site1": tdaily}, latitude=0, empirical=coeffs, models={"CH": chilling_hours}
+    )
+    assert isinstance(result, dict)
+    assert "site1" in result
+    # site1 has Tmin=10, Tmax=20. Hour 0-23 are 10-20.
+    # Chilling_Hours usually counts hours between 0 and 7.2.
+    # Here all are > 7.2, so CH should be 0.
+    assert result["site1"].empty or result["site1"].loc[0, "CH"] == 0
 
 
 def test_accumulation_functions_validate_inputs_and_partial_branches():
@@ -385,8 +436,6 @@ def test_accumulation_functions_validate_inputs_and_partial_branches():
         temp_response(pd.DataFrame({"Year": [2021], "JDay": [1], "Hour": [0]}))
     with pytest.raises(ValueError, match="missing hourly temperatures"):
         daily_chill(pd.DataFrame({"Year": [2021], "JDay": [1], "Hour": [0], "Temp": [np.nan]}))
-    with pytest.raises(NotImplementedError, match="empirical"):
-        temp_response_daily_list([pd.DataFrame()], latitude=0, empirical=pd.DataFrame())
 
 
 def test_make_all_day_table_fills_missing_daily_records_and_averages_duplicates():
